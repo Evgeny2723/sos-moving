@@ -86,12 +86,13 @@ function removeErrorClassOnInput(e) {
     e.addEventListener("focus", () => {}
     )
 }
-// START: Изменения (п. 2 - Отключение валидации)
+
+// START: Изменение 1 - Отключение валидации
 function formValidation(e) {
-    // Валидация отключена согласно требованиям
+    // Валидация всегда возвращает true, чтобы разрешить отправку
     return true;
 }
-// END: Изменения
+// END: Изменение 1
 
 function checkValidationFormOnSubmit(e) {
     let t = document.querySelector(e)
@@ -106,23 +107,22 @@ function checkValidationFormOnSubmit(e) {
 }
 
 Webflow.push(function() {
-    // START: Изменения (п. 3 - Добавление referral source из utm_source)
+    // Добавление referral source из utm_source
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const utmSource = urlParams.get('utm_source'); // Стандартный UTM-параметр
+        const utmSource = urlParams.get('utm_source');
         const referralSourceInput = $('#referral-source');
 
         if (referralSourceInput.length) {
             if (utmSource) {
                 referralSourceInput.val(utmSource);
             } else {
-                referralSourceInput.val('not provided'); // Заглушка, если utm_source отсутствует
+                referralSourceInput.val('not provided');
             }
         }
     } catch (error) {
         console.error("Ошибка при установке referral source:", error);
     }
-    // END: Изменения
 
     $(".is-have-slider").length && (slidersArr = [],
     $(".is-have-slider").each(function(e) {
@@ -395,6 +395,8 @@ $("form").length && ($("form").each(function() {
     $(this).attr("name", "Form in " + $("title").text() + "."))
 }),
 $(".bottom-cta-wrapper form").length && ($(".services-hero-section form").length ? $(".bottom-cta-wrapper form").attr("redirect", $(".services-hero-section form").attr("redirect")) : $(".bottom-cta-wrapper form").attr("redirect", "/confirmation-page"))),
+
+// START: Изменение 2 - Добавление заглушек перед отправкой
 $("form").on("submit", function() {
     var e = $(this)
       , t = {
@@ -404,35 +406,30 @@ $("form").on("submit", function() {
       , a = e.find('[type="submit"]')
       , i = a.val();
 
-    // START: Изменения (п. 1 - Добавление заглушек для пустых полей)
-    if (!t.data.field_first_name) {
-        t.data.field_first_name = "n/a";
+    // Проверяем каждое поле и устанавливаем заглушку "n/a", если оно пустое
+    if (!t.data.field_first_name) t.data.field_first_name = "n/a";
+    if (!t.data.field_last_name) t.data.field_last_name = "n/a";
+    if (!t.data.field_e_mail) t.data.field_e_mail = "n/a";
+    if (!t.data.field_phone) t.data.field_phone = "n/a";
+    if (!t.data.moving_from_zip) t.data.moving_from_zip = "00000";
+    if (!t.data.moving_to_zip) t.data.moving_to_zip = "00000";
+    if (!t.data.field_date) {
+        var o = new Date(),
+            r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
+        t.data.field_date = r;
     }
-    if (!t.data.field_phone) {
-        t.data.field_phone = "n/a";
-    }
-    if (!t.data.field_e_mail) {
-        t.data.field_e_mail = "n/a";
-    }
-    // END: Изменения
 
     if (!formValidation(e[0]))
         return !1;
+
     if (!e.hasClass("referer-form")) {
-        if (a.val(a.data("wait")),
-        t.data.field_last_name = "n/a",
-        t.data.provider_id = 50,
-        !t.data.moving_from_zip) {
-            var o = new Date
-              , r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
-            t.data.moving_from_zip = "00000",
-            t.data.moving_to_zip = "00000",
-            t.data.field_move_service_type = 0,
-            t.data.field_date = r
-        }
+        a.val(a.data("wait"));
+        t.data.provider_id = 50; // Это значение остается по умолчанию
+        
         t = JSON.stringify(t),
-        console.log(t);
+        console.log("Отправляемые данные:", t); // Выводим в консоль для проверки
         var l = $(this).siblings(".w-form-fail");
+
         $.ajax({
             url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
             type: "POST",
@@ -441,8 +438,8 @@ $("form").on("submit", function() {
             contentType: "application/json",
             statusCode: {
                 400: function(e) {
-                    var t = JSON.parse(e);
-                    l.html(t.status_message),
+                    var t = JSON.parse(e.responseText || "{}");
+                    l.html(t.status_message || "Bad Request"),
                     l.show(),
                     a.val(i)
                 }
@@ -454,10 +451,12 @@ $("form").on("submit", function() {
                 a.val(i)
             },
             error: function(e, t, s) {
-                l.html(t.status_message),
+                    // Обработка CORS и других сетевых ошибок
+                l.html("Ошибка отправки. Проверьте консоль (F12) для деталей."),
                 l.show(),
                 a.val(i)
             }
         })
     }
 });
+// END: Изменение 2
