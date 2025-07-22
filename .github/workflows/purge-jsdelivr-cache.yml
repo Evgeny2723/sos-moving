@@ -1,6 +1,4 @@
-# Название вашего воркфлоу
 name: Purge jsDelivr Cache
-
 on:
   push:
     branches: [ main ]
@@ -13,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Purge jsDelivr cache
-        # --- ИСПРАВЛЕННАЯ СТРОКА ---
-        uses: steebchen/jsdelivr-purge@v1
+        uses: jsdelivr/jsdelivr-purge-action@v1
         with:
-          # Файлы для очистки
-          files: '/script.js, /style.css'
+          # Обратите внимание: параметр называется urls, и нужно
+          # передавать полные CDN‑URL
+          urls: |
+            https://cdn.jsdelivr.net/gh/Evgeny2723/sos-moving@main/script.js
+            https://cdn.jsdelivr.net/gh/Evgeny2723/sos-moving@main/style.css
