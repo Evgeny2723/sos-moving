@@ -87,12 +87,10 @@ function removeErrorClassOnInput(e) {
     )
 }
 
-// START: Изменение 1 - Отключение валидации
 function formValidation(e) {
     // Валидация всегда возвращает true, чтобы разрешить отправку
     return true;
 }
-// END: Изменение 1
 
 function checkValidationFormOnSubmit(e) {
     let t = document.querySelector(e)
@@ -107,11 +105,12 @@ function checkValidationFormOnSubmit(e) {
 }
 
 Webflow.push(function() {
-    // Добавление referral source из utm_source
+    // START: Изменение здесь
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const utmSource = urlParams.get('utm_source');
-        const referralSourceInput = $('#referral-source');
+        // Поиск по классу '.referral-source' вместо ID '#referral-source'
+        const referralSourceInput = $('.referral-source'); 
 
         if (referralSourceInput.length) {
             if (utmSource) {
@@ -123,6 +122,7 @@ Webflow.push(function() {
     } catch (error) {
         console.error("Ошибка при установке referral source:", error);
     }
+    // END: Изменение здесь
 
     $(".is-have-slider").length && (slidersArr = [],
     $(".is-have-slider").each(function(e) {
@@ -151,7 +151,7 @@ Webflow.push(function() {
             autoplay: slidersArr[e].autoplay,
             adaptiveHeight: !0,
             autoplaySpeed: 2e3,
-            nextArrow: t.find(".is-next"),
+    _arrow: t.find(".is-next"),
             prevArrow: t.find(".is-prev"),
             dots: 1 == slidersArr[e].sliderDots.length,
             appendDots: slidersArr[e].sliderDots,
@@ -344,7 +344,7 @@ function extractComponents(e) {
         locality: "long_name",
         administrative_area_level_1: "short_name",
         country: "long_name",
-        postal_code: "short_name"
+  _code: "short_name"
     }, s = {
         google_place_id: e.place_id,
         formatted_address: e.formatted_address,
@@ -396,7 +396,6 @@ $("form").length && ($("form").each(function() {
 }),
 $(".bottom-cta-wrapper form").length && ($(".services-hero-section form").length ? $(".bottom-cta-wrapper form").attr("redirect", $(".services-hero-section form").attr("redirect")) : $(".bottom-cta-wrapper form").attr("redirect", "/confirmation-page"))),
 
-// START: Изменение 2 - Добавление заглушек перед отправкой
 $("form").on("submit", function() {
     var e = $(this)
       , t = {
@@ -424,10 +423,10 @@ $("form").on("submit", function() {
 
     if (!e.hasClass("referer-form")) {
         a.val(a.data("wait"));
-        t.data.provider_id = 50; // Это значение остается по умолчанию
+        t.data.provider_id = 50; 
         
         t = JSON.stringify(t),
-        console.log("Отправляемые данные:", t); // Выводим в консоль для проверки
+        console.log("Отправляемые данные:", t); 
         var l = $(this).siblings(".w-form-fail");
 
         $.ajax({
@@ -451,7 +450,6 @@ $("form").on("submit", function() {
                 a.val(i)
             },
             error: function(e, t, s) {
-                    // Обработка CORS и других сетевых ошибок
                 l.html("Ошибка отправки. Проверьте консоль (F12) для деталей."),
                 l.show(),
                 a.val(i)
@@ -459,4 +457,3 @@ $("form").on("submit", function() {
         })
     }
 });
-// END: Изменение 2
