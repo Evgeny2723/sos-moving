@@ -1,26 +1,20 @@
-# Название вашего воркфлоу, отображается в списке Actions
+# Название вашего воркфлоу
 name: Purge jsDelivr Cache
 
-# Триггер: запускать этот воркфлоу...
 on:
-  # ...при каждом push (коммите) в ветку 'main'
   push:
     branches: [ main ]
-    # ...но только если изменения затронули файл 'script.js'
+    # Теперь воркфлоу сработает, если изменен ЛЮБОЙ из этих файлов
     paths:
       - 'script.js'
+      - 'style.css'
 
-# Задачи, которые нужно выполнить
 jobs:
   purge_cache:
-    # Запускать на стандартном сервере GitHub
     runs-on: ubuntu-latest
     steps:
-      # Название шага
       - name: Purge jsDelivr cache
-        # Используем готовый экшен с GitHub Marketplace
         uses: steebchen/js-jsdelivr-purge@v1
         with:
-          # Указываем, какие файлы нужно очистить
-          # Путь к вашему файлу внутри репозитория
-          files: '/script.js'
+          # Очищаем кэш для обоих файлов, перечисляя их через запятую
+          files: '/script.js, /style.css'
