@@ -104,8 +104,6 @@ function checkValidationFormOnSubmit(e) {
 }
 
 Webflow.push(function() {
-    // --- ЛОГИКА ДЛЯ СкрыТОГО ПОЛЯ referral-source УДАЛЕНА ---
-
     $(".is-have-slider").length && (slidersArr = [],
     $(".is-have-slider").each(function(e) {
         let t = $(this);
@@ -403,7 +401,6 @@ $("form").on("submit", function() {
         t.data.field_date = r;
     }
     
-    // --- ДОБАВЛЕНО: Удаляем поле referral-source из данных перед отправкой ---
     delete t.data['referral-source'];
 
     if (!formValidation(e[0]))
@@ -422,26 +419,4 @@ $("form").on("submit", function() {
             type: "POST",
             dataType: "text",
             data: t,
-            contentType: "application/json",
-            statusCode: {
-                400: function(e) {
-                    var t = JSON.parse(e.responseText || "{}");
-                    l.html(t.status_message || "Bad Request"),
-                    l.show(),
-                    a.val(i)
-                }
-            },
-            success: function(e) {
-                var t = JSON.parse(e);
-                t.status ? window.location = s : (l.html(t.status_message),
-                l.show()),
-                a.val(i)
-            },
-            error: function(e, t, s) {
-                l.html("Ошибка отправки. Проверьте консоль (F12) для деталей."),
-                l.show(),
-                a.val(i)
-            }
-        })
-    }
-});
+            contentType: "application
