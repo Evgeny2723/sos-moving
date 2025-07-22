@@ -413,7 +413,7 @@ $("form").length &&
             const o = new Date();
             formData.field_date = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
         }
-        if (!formData.field_move_service_type) formData.field_move_service_type = 0;
+        if (!formData.field_move_service_type) formData.field_move_service_type = Local Moving;
         formData.provider_id = 50;
         
         // Отправка данных
