@@ -88,7 +88,6 @@ function removeErrorClassOnInput(e) {
 }
 
 function formValidation(e) {
-    // Валидация всегда возвращает true, чтобы разрешить отправку
     return true;
 }
 
@@ -105,21 +104,7 @@ function checkValidationFormOnSubmit(e) {
 }
 
 Webflow.push(function() {
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const utmSource = urlParams.get('utm_source');
-        const referralSourceInput = $('.referral-source'); 
-
-        if (referralSourceInput.length) {
-            if (utmSource) {
-                referralSourceInput.val(utmSource);
-            } else {
-                referralSourceInput.val('not provided');
-            }
-        }
-    } catch (error) {
-        console.error("Ошибка при установке referral source:", error);
-    }
+    // --- ЛОГИКА ДЛЯ СкрыТОГО ПОЛЯ referral-source УДАЛЕНА ---
 
     $(".is-have-slider").length && (slidersArr = [],
     $(".is-have-slider").each(function(e) {
@@ -402,33 +387,24 @@ $("form").on("submit", function() {
       , a = e.find('[type="submit"]')
       , i = a.val();
 
-    // START: Обновленная логика заглушек
-    // Регулярное выражение для простой проверки email
     const emailRegex = /\S+@\S+\.\S+/;
 
-    // Имя и Фамилия
     if (!t.data.field_first_name) t.data.field_first_name = "Not Provided";
     if (!t.data.field_last_name) t.data.field_last_name = "Not Provided";
-
-    // Email: проверяем на пустоту И на неверный формат
     if (!t.data.field_e_mail || !emailRegex.test(t.data.field_e_mail)) {
         t.data.field_e_mail = "no-reply@example.com";
     }
-    
-    // Телефон
     if (!t.data.field_phone) t.data.field_phone = "(000) 000-0000";
-    
-    // ZIP коды
     if (!t.data.moving_from_zip) t.data.moving_from_zip = "00000";
     if (!t.data.moving_to_zip) t.data.moving_to_zip = "00000";
-    
-    // Дата
     if (!t.data.field_date) {
         var o = new Date(),
             r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
         t.data.field_date = r;
     }
-    // END: Обновленная логика заглушек
+    
+    // --- ДОБАВЛЕНО: Удаляем поле referral-source из данных перед отправкой ---
+    delete t.data['referral-source'];
 
     if (!formValidation(e[0]))
         return !1;
