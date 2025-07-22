@@ -321,64 +321,84 @@ $select.each(function () {
 		$(".bottom-cta-wrapper form").length &&
 			($(".services-hero-section form").length ? $(".bottom-cta-wrapper form").attr("redirect", $(".services-hero-section form").attr("redirect")) : $(".bottom-cta-wrapper form").attr("redirect", "/confirmation-page"))),
 
-    // --- НАЧАЛО: ИЗМЕНЕННАЯ ЛОГИКА ОТПРАВКИ ФОРМЫ ---
-	$("form").on("submit", function () {
-		var e = $(this),
-			t = formToObj(e), // Создаем "плоский" объект с данными
-			s = e.attr("data-api-redirect"),
-			a = e.find('[type="submit"]'),
-			i = a.val();
+    // --- НАЧАЛО: УЛУЧШЕННАЯ ЛОГИКА ОТПРАВКИ ФОРМЫ ---
+$("form").on("submit", function (event) {
+    // Предотвращаем стандартное поведение формы
+    event.preventDefault();
+    
+    console.log("Шаг 1: Отправка формы перехвачена.", this);
 
-		// СТРОКА ВАЛИДАЦИИ УДАЛЕНА. Отправка больше не блокируется.
-		// if (!formValidation(e[0])) return !1;
+    var formElement = $(this);
+    var formData = formToObj(formElement);
+    var redirectUrl = formElement.attr("data-api-redirect") || "/confirmation-page";
+    var submitButton = formElement.find('[type="submit"]');
+    var initialButtonText = submitButton.val();
+    var errorContainer = formElement.siblings(".w-form-fail");
 
-		if (!e.hasClass("referer-form")) {
-            // Заполняем пустые поля заглушками
-            const emailRegex = /\S+@\S+\.\S+/;
-            if (!t.field_first_name) t.field_first_name = "Not Provided";
-            if (!t.field_last_name || t.field_last_name === "n/a") t.field_last_name = "Not Provided";
-            if (!t.field_e_mail || !emailRegex.test(t.field_e_mail)) t.field_e_mail = "no-reply@example.com";
-            if (!t.field_phone) t.field_phone = "(000) 000-0000";
-            if (!t.moving_from_zip) t.moving_from_zip = "00000";
-            if (!t.moving_to_zip) t.moving_to_zip = "00000";
-            if (!t.field_date) {
-                var o = new Date,
-                    r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
-                t.field_date = r;
+    // Шаг 2: Устанавливаем заглушки для ВСЕХ полей, которые могут быть обязательными в CRM
+    const emailRegex = /\S+@\S+\.\S+/;
+    const placeholders = {
+        field_first_name: "Not Provided",
+        field_last_name: "Not Provided",
+        field_e_mail: "no-reply@example.com",
+        field_phone: "(000) 000-0000",
+        moving_from_zip: "00000",
+        moving_to_zip: "00000",
+        field_date: () => { // Функция для генерации текущей даты
+            const o = new Date();
+            return o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
+        },
+        // !!! ВАЖНО: Добавьте сюда другие обязательные поля для вашей CRM
+        // Например:
+        // field_move_service_type: 1, // Вместо 0, если CRM требует конкретный тип
+        // source: "Website Form", // Если CRM требует источник
+    };
+
+    // Применяем заглушки
+    if (!formData.field_first_name) formData.field_first_name = placeholders.field_first_name;
+    if (!formData.field_last_name) formData.field_last_name = placeholders.field_last_name;
+    if (!formData.field_e_mail || !emailRegex.test(formData.field_e_mail)) formData.field_e_mail = placeholders.field_e_mail;
+    if (!formData.field_phone) formData.field_phone = placeholders.field_phone;
+    if (!formData.moving_from_zip) formData.moving_from_zip = placeholders.moving_from_zip;
+    if (!formData.moving_to_zip) formData.moving_to_zip = placeholders.moving_to_zip;
+    if (!formData.field_date) formData.field_date = placeholders.field_date();
+    
+    // Добавляем обязательные системные поля
+    formData.provider_id = 50;
+
+    // Шаг 3: Отправка данных
+    var dataToSend = JSON.stringify(formData);
+    console.log("Шаг 3: Отправляемые данные (плоская структура):", dataToSend);
+    
+    submitButton.val(submitButton.data("wait") || "Please wait...");
+
+    $.ajax({
+        url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
+        type: "POST",
+        data: dataToSend,
+        contentType: "application/json",
+        success: function (response) {
+            console.log("Шаг 4: Успешный ответ от сервера.");
+            var parsedResponse = JSON.parse(response);
+            if (parsedResponse.status) {
+                window.location = redirectUrl;
+            } else {
+                errorContainer.html(parsedResponse.status_message || "An error occurred.").show();
+                submitButton.val(initialButtonText);
             }
-            if(!t.field_move_service_type) t.field_move_service_type = 0;
-			t.provider_id = 50;
-			
-			a.val(a.data("wait"));
-			var dataToSend = JSON.stringify(t); // Отправляем "плоский" объект
-			console.log("Отправляемые данные:", dataToSend);
-			var l = $(this).siblings(".w-form-fail");
-
-			$.ajax({
-				url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
-				type: "POST",
-				dataType: "text",
-				data: dataToSend,
-				contentType: "application/json",
-				statusCode: {
-					400: function (xhr) {
-                        var errorMsg = "Bad Request";
-                        try {
-                            var response = JSON.parse(xhr.responseText);
-                            if (response && response.status_message) { errorMsg = response.status_message; }
-                        } catch (err) {}
-						l.html(errorMsg), l.show(), a.val(i);
-					}
-				},
-				success: function (response) {
-					var parsedResponse = JSON.parse(response);
-					parsedResponse.status ? (window.location = s) : (l.html(parsedResponse.status_message), l.show()), a.val(i);
-				},
-				error: function (xhr, status, error) {
-                    if (xhr.status === 400) return; 
-					l.html("Network error, please try again."), l.show(), a.val(i);
-				},
-			});
-		}
-	});
-    // --- КОНЕЦ: ИЗМЕНЕННАЯ ЛОГИКА ОТПРАВКИ ФОРМЫ ---
+        },
+        error: function (xhr) {
+            console.error("Шаг 4: Ошибка AJAX-запроса!", xhr);
+            let errorMsg = "Submission failed. Please try again.";
+            try {
+                const errorResponse = JSON.parse(xhr.responseText);
+                if (errorResponse && errorResponse.status_message) {
+                    errorMsg = errorResponse.status_message;
+                }
+            } catch (e) {}
+            errorContainer.html(errorMsg).show();
+            submitButton.val(initialButtonText);
+        }
+    });
+});
+// --- КОНЕЦ: УЛУЧШЕННАЯ ЛОГИКА ОТПРАВКИ ФОРМЫ ---
