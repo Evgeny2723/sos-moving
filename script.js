@@ -105,11 +105,9 @@ function checkValidationFormOnSubmit(e) {
 }
 
 Webflow.push(function() {
-    // START: Изменение здесь
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const utmSource = urlParams.get('utm_source');
-        // Поиск по классу '.referral-source' вместо ID '#referral-source'
         const referralSourceInput = $('.referral-source'); 
 
         if (referralSourceInput.length) {
@@ -122,7 +120,6 @@ Webflow.push(function() {
     } catch (error) {
         console.error("Ошибка при установке referral source:", error);
     }
-    // END: Изменение здесь
 
     $(".is-have-slider").length && (slidersArr = [],
     $(".is-have-slider").each(function(e) {
@@ -151,7 +148,7 @@ Webflow.push(function() {
             autoplay: slidersArr[e].autoplay,
             adaptiveHeight: !0,
             autoplaySpeed: 2e3,
-    _arrow: t.find(".is-next"),
+            nextArrow: t.find(".is-next"),
             prevArrow: t.find(".is-prev"),
             dots: 1 == slidersArr[e].sliderDots.length,
             appendDots: slidersArr[e].sliderDots,
@@ -344,7 +341,7 @@ function extractComponents(e) {
         locality: "long_name",
         administrative_area_level_1: "short_name",
         country: "long_name",
-  _code: "short_name"
+        postal_code: "short_name"
     }, s = {
         google_place_id: e.place_id,
         formatted_address: e.formatted_address,
@@ -405,18 +402,33 @@ $("form").on("submit", function() {
       , a = e.find('[type="submit"]')
       , i = a.val();
 
-    // Проверяем каждое поле и устанавливаем заглушку "n/a", если оно пустое
-    if (!t.data.field_first_name) t.data.field_first_name = "n/a";
-    if (!t.data.field_last_name) t.data.field_last_name = "n/a";
-    if (!t.data.field_e_mail) t.data.field_e_mail = "n/a";
-    if (!t.data.field_phone) t.data.field_phone = "n/a";
+    // START: Обновленная логика заглушек
+    // Регулярное выражение для простой проверки email
+    const emailRegex = /\S+@\S+\.\S+/;
+
+    // Имя и Фамилия
+    if (!t.data.field_first_name) t.data.field_first_name = "Not Provided";
+    if (!t.data.field_last_name) t.data.field_last_name = "Not Provided";
+
+    // Email: проверяем на пустоту И на неверный формат
+    if (!t.data.field_e_mail || !emailRegex.test(t.data.field_e_mail)) {
+        t.data.field_e_mail = "no-reply@example.com";
+    }
+    
+    // Телефон
+    if (!t.data.field_phone) t.data.field_phone = "(000) 000-0000";
+    
+    // ZIP коды
     if (!t.data.moving_from_zip) t.data.moving_from_zip = "00000";
     if (!t.data.moving_to_zip) t.data.moving_to_zip = "00000";
+    
+    // Дата
     if (!t.data.field_date) {
         var o = new Date(),
             r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
         t.data.field_date = r;
     }
+    // END: Обновленная логика заглушек
 
     if (!formValidation(e[0]))
         return !1;
