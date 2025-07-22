@@ -169,7 +169,7 @@
 }
 
 select.is-error+.select2-container--default .select2-selection--single {
-    border-color: #151414
+    border-color: #ffe533
 }
 
 .select2-container--default .select2-selection--single {
