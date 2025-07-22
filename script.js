@@ -290,17 +290,13 @@ $select.each(function () {
         var o = new Date();
         var r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
         
-        // **ЛОГИКА АВТОЗАПОЛНЕНИЯ**
-        // Установка обязательных значений
         t.data.provider_id = 50;
         t.data.field_last_name = "n/a";
-
-        // Установка даты по умолчанию, если она не указана
+        
         if (!t.data.field_date) {
             t.data.field_date = r;
         }
-
-        // Проверка всех полей и установка значений по умолчанию для пустых
+        
         for (const key in t.data) {
             if (t.data[key] === null || t.data[key] === "") {
                 switch (key) {
@@ -312,7 +308,6 @@ $select.each(function () {
                         t.data[key] = 0;
                         break;
                     default:
-                        // Для всех остальных пустых полей используется "n/a"
                         t.data[key] = "n/a";
                 }
             }
@@ -344,3 +339,21 @@ $select.each(function () {
             },
         });
     });
+
+// --- НОВЫЙ БЛОК ДЛЯ UTM-МЕТКИ ---
+window.addEventListener("DOMContentLoaded", function () {
+    // Ищем скрытое поле по его ID
+    const companyNameField = document.getElementById('company_name');
+    
+    // Если поле существует на странице
+    if (companyNameField) {
+        // Создаем объект для работы с параметрами URL
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Получаем значение параметра 'utm_source'
+        const utmSource = urlParams.get('utm_source');
+        
+        // Устанавливаем значение поля: если utmSource есть, используем его, иначе — 'n/a'
+        companyNameField.value = utmSource || 'n/a';
+    }
+});
