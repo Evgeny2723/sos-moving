@@ -78,6 +78,7 @@ function removeErrorClassOnInput(e) {
     		}),
     	e.addEventListener("focus", () => {});
 }
+// Эта функция больше не будет вызываться при отправке, но пусть останется, если понадобится в будущем
 function formValidation(e) {
     let t = !0,
     	s = e.querySelectorAll('input, select, [type="radio"]');
@@ -181,11 +182,13 @@ Webflow.push(function () {
 }),
 	addInputPhoneMask();
 var forms = document.querySelectorAll("form");
-forms.length &&
-	forms.forEach((e) => {
-		checkValidationFormOnSubmit(`#${e.getAttribute("id")}`), e.setAttribute("novalidate", "");
-	}),
-	$(".blog-category-list").length && $(".blog-category-list").prepend('<div role="listitem" class="w-dyn-item"><a href="/blog" aria-current="page" class="blog-category-link w--current">All Articles</a></div>');
+// Эта функция больше не нужна, так как мы используем свой обработчик
+// forms.length &&
+// 	forms.forEach((e) => {
+// 		checkValidationFormOnSubmit(`#${e.getAttribute("id")}`), e.setAttribute("novalidate", "");
+// 	});
+
+$(".blog-category-list").length && $(".blog-category-list").prepend('<div role="listitem" class="w-dyn-item"><a href="/blog" aria-current="page" class="blog-category-link w--current">All Articles</a></div>');
 const nav = $(".navbar");
 function openDropdown(e) {
     let t = e.find(".dropdown-content-wrapper");
@@ -321,34 +324,34 @@ $select.each(function () {
     // --- НАЧАЛО: ИЗМЕНЕННАЯ ЛОГИКА ОТПРАВКИ ФОРМЫ ---
 	$("form").on("submit", function () {
 		var e = $(this),
-			// 1. Убираем лишнюю обертку { data: ... }
-			t = formToObj(e),
+			t = formToObj(e), // Создаем "плоский" объект с данными
 			s = e.attr("data-api-redirect"),
 			a = e.find('[type="submit"]'),
 			i = a.val();
 
-		if (!formValidation(e[0])) return !1; // Валидация снова блокирует отправку, если поля неверны
+		// СТРОКА ВАЛИДАЦИИ УДАЛЕНА. Отправка больше не блокируется.
+		// if (!formValidation(e[0])) return !1;
 
 		if (!e.hasClass("referer-form")) {
-			// 2. Добавляем заглушки и обязательные поля прямо в "плоский" объект
-			t.field_last_name = t.field_last_name || "Not Provided";
-            t.field_first_name = t.field_first_name || "Not Provided";
-            t.field_e_mail = t.field_e_mail || "no-reply@example.com";
-            t.field_phone = t.field_phone || "(000) 000-0000";
+            // Заполняем пустые поля заглушками
+            const emailRegex = /\S+@\S+\.\S+/;
+            if (!t.field_first_name) t.field_first_name = "Not Provided";
+            if (!t.field_last_name || t.field_last_name === "n/a") t.field_last_name = "Not Provided";
+            if (!t.field_e_mail || !emailRegex.test(t.field_e_mail)) t.field_e_mail = "no-reply@example.com";
+            if (!t.field_phone) t.field_phone = "(000) 000-0000";
+            if (!t.moving_from_zip) t.moving_from_zip = "00000";
+            if (!t.moving_to_zip) t.moving_to_zip = "00000";
+            if (!t.field_date) {
+                var o = new Date,
+                    r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
+                t.field_date = r;
+            }
+            if(!t.field_move_service_type) t.field_move_service_type = 0;
 			t.provider_id = 50;
 			
-            if (!t.moving_from_zip) {
-				var o = new Date,
-					r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
-				t.moving_from_zip = "00000";
-				t.moving_to_zip = "00000";
-				t.field_move_service_type = 0;
-				t.field_date = r;
-			}
-
 			a.val(a.data("wait"));
-			var dataToSend = JSON.stringify(t);
-			console.log("Отправляемые данные (плоская структура):", dataToSend);
+			var dataToSend = JSON.stringify(t); // Отправляем "плоский" объект
+			console.log("Отправляемые данные:", dataToSend);
 			var l = $(this).siblings(".w-form-fail");
 
 			$.ajax({
@@ -362,9 +365,7 @@ $select.each(function () {
                         var errorMsg = "Bad Request";
                         try {
                             var response = JSON.parse(xhr.responseText);
-                            if (response && response.status_message) {
-                                errorMsg = response.status_message;
-                            }
+                            if (response && response.status_message) { errorMsg = response.status_message; }
                         } catch (err) {}
 						l.html(errorMsg), l.show(), a.val(i);
 					}
@@ -374,7 +375,6 @@ $select.each(function () {
 					parsedResponse.status ? (window.location = s) : (l.html(parsedResponse.status_message), l.show()), a.val(i);
 				},
 				error: function (xhr, status, error) {
-                    // Игнорируем ошибку 400, так как она обрабатывается в statusCode
                     if (xhr.status === 400) return; 
 					l.html("Network error, please try again."), l.show(), a.val(i);
 				},
