@@ -4,7 +4,6 @@ name: Purge jsDelivr Cache
 on:
   push:
     branches: [ main ]
-    # Теперь воркфлоу сработает, если изменен ЛЮБОЙ из этих файлов
     paths:
       - 'script.js'
       - 'style.css'
@@ -14,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Purge jsDelivr cache
-        uses: steebchen/js-jsdelivr-purge@v1
+        # --- ИСПРАВЛЕННАЯ СТРОКА ---
+        uses: steebchen/jsdelivr-purge@v1
         with:
-          # Очищаем кэш для обоих файлов, перечисляя их через запятую
+          # Файлы для очистки
           files: '/script.js, /style.css'
