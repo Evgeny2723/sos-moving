@@ -340,35 +340,33 @@ $select.each(function () {
         });
     });
 
-// --- БЛОК ИНИЦИАЛИЗАЦИИ SOURCEBUSTER.JS (SBJS) ---
-// Этот код заменил старый обработчик UTM-меток
+// --- ДИАГНОСТИЧЕСКИЙ БЛОК ИНИЦИАЛИЗАЦИИ SBJS ---
 window.addEventListener("load", function () {
-    // Проверяем, что библиотека sbjs была загружена и доступна в window
     if (typeof sbjs !== 'undefined') {
-
-        // Инициализируем библиотеку
         sbjs.init({
-            // callback-функция выполнится после того, как sbjs соберёт все данные
             callback: function(data) {
-                // Для отладки можно посмотреть, какие данные собрала библиотека
-                console.log("Sourcebuster data:", data); 
+                console.log("Sourcebuster data:", data); // Мы знаем, что это работает
 
-                // Ищем скрытое поле 'company_name' по его ID
+                console.log("Ищем скрытое поле с id='company_name'...");
                 const companyNameField = document.getElementById('company_name');
-                
+
+                // Проверяем, был ли найден элемент
+                console.log("Найденный элемент:", companyNameField);
+
                 if (companyNameField) {
-                    // Заполняем поле. `data.src` это источник (аналог utm_source).
-                    // Если источника нет, устанавливаем 'n/a'.
-                    companyNameField.value = data.src || 'n/a';
+                    const sourceValue = data.src || 'n/a';
+                    console.log("Пытаемся установить значение:", sourceValue);
+                    
+                    companyNameField.value = sourceValue;
+                    
+                    // Сразу после установки проверяем, что записалось в поле
+                    console.log("Значение поля ПОСЛЕ установки:", companyNameField.value);
+                } else {
+                    console.error("ОШИБКА: Поле с id='company_name' не найдено на странице!");
                 }
-                
-                // Сюда можно добавить код для заполнения других скрытых полей,
-                // например, для utm_campaign (data.cmp) или utm_medium (data.mdm).
             }
         });
-
     } else {
-        // Если sbjs не загрузилась, выводим ошибку в консоль
-        console.error("Sourcebuster.js (sbjs) is not loaded. Make sure the script is included on the page.");
+        console.error("Sourcebuster.js (sbjs) is not loaded.");
     }
 });
