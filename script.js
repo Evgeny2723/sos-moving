@@ -342,7 +342,7 @@ $select.each(function () {
 
 // --- БЛОК ИНИЦИАЛИЗАЦИИ SOURCEBUSTER.JS (SBJS) ---
 // Этот код заменил старый обработчик UTM-меток
-window.addEventListener("DOMContentLoaded", function () {
+window.addEventListener("load", function () {
     // Проверяем, что библиотека sbjs была загружена и доступна в window
     if (typeof sbjs !== 'undefined') {
 
