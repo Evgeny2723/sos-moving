@@ -340,33 +340,40 @@ $select.each(function () {
         });
     });
 
-// --- ДИАГНОСТИЧЕСКИЙ БЛОК ИНИЦИАЛИЗАЦИИ SBJS ---
+// --- ФИНАЛЬНЫЙ БЛОК ИНИЦИАЛИЗАЦИИ SBJS С ЗАЩИТОЙ ОТ ПОВТОРНОГО ВЫЗОВА ---
+
+// Создаём глобальный флаг, чтобы код выполнился только один раз
+window.sbjsInitialized = window.sbjsInitialized || false;
+
 window.addEventListener("load", function () {
-    if (typeof sbjs !== 'undefined') {
-        sbjs.init({
-            callback: function(data) {
-                console.log("Sourcebuster data:", data); // Мы знаем, что это работает
+    // Выполняем код, только если он не был запущен ранее
+    if (!window.sbjsInitialized) {
+        
+        // Сразу устанавливаем флаг, чтобы предотвратить повторный запуск
+        window.sbjsInitialized = true;
+        
+        console.log("Запускаем инициализацию Sourcebuster... (один раз)");
 
-                console.log("Ищем скрытое поле с id='company_name'...");
-                const companyNameField = document.getElementById('company_name');
+        if (typeof sbjs !== 'undefined') {
+            sbjs.init({
+                callback: function(data) {
+                    console.log("Sourcebuster data:", data);
 
-                // Проверяем, был ли найден элемент
-                console.log("Найденный элемент:", companyNameField);
-
-                if (companyNameField) {
-                    const sourceValue = data.src || 'n/a';
-                    console.log("Пытаемся установить значение:", sourceValue);
+                    const companyNameField = document.getElementById('company_name');
                     
-                    companyNameField.value = sourceValue;
-                    
-                    // Сразу после установки проверяем, что записалось в поле
-                    console.log("Значение поля ПОСЛЕ установки:", companyNameField.value);
-                } else {
-                    console.error("ОШИБКА: Поле с id='company_name' не найдено на странице!");
+                    if (companyNameField) {
+                        const sourceValue = data.src || 'n/a';
+                        console.log("Устанавливаем значение в поле:", sourceValue);
+                        companyNameField.value = sourceValue;
+                    } else {
+                        console.error("ОШИБКА: Поле с id='company_name' не найдено!");
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            console.error("Sourcebuster.js (sbjs) is not loaded.");
+        }
     } else {
-        console.error("Sourcebuster.js (sbjs) is not loaded.");
+        console.log("Инициализация Sourcebuster уже была выполнена. Повторный запуск пропущен.");
     }
 });
