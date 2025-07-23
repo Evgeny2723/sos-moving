@@ -1,3 +1,39 @@
+// --- ФИНАЛЬНАЯ ВЕРСИЯ С РАЗДЕЛЕНИЕМ ЗАХВАТА И ПРИМЕНЕНИЯ ---
+
+// 1. ЗАХВАТ ДАННЫХ: Запускаем sbjs немедленно, как только этот скрипт загружается.
+// Это гарантирует, что мы поймаем URL с UTM-метками до того, как они могут исчезнуть.
+if (typeof sbjs !== 'undefined') {
+    sbjs.init();
+}
+
+// 2. ПРИМЕНЕНИЕ ДАННЫХ: После того как страница загрузилась и форма доступна.
+window.addEventListener("DOMContentLoaded", function () {
+    console.log("DOM загружен. Применяем данные из Sourcebuster...");
+
+    if (typeof sbjs !== 'undefined' && typeof sbjs.get !== 'undefined') {
+        
+        // Получаем данные, которые sbjs уже сохранил в cookie
+        const sbjsData = sbjs.get;
+        console.log("Прочитанные данные из sbjs.get:", sbjsData);
+
+        const companyNameField = document.getElementById('company_name');
+        
+        if (companyNameField) {
+            // `sbjs.get.current` содержит данные о текущей сессии.
+            // `sbjs.get.current.src` - это источник (utm_source).
+            const sourceValue = sbjsData.current.src || 'n/a';
+            
+            console.log("Устанавливаем значение в поле:", sourceValue);
+            companyNameField.value = sourceValue;
+        } else {
+            console.error("ОШИБКА: Поле с id='company_name' не найдено!");
+        }
+
+    } else {
+        console.error("Sourcebuster (sbjs) или sbjs.get не определены.");
+    }
+});
+
 const Webflow = window.Webflow || [];
 
 function addInputPhoneMask() {
@@ -339,41 +375,3 @@ $select.each(function () {
             },
         });
     });
-
-// --- ФИНАЛЬНЫЙ БЛОК ИНИЦИАЛИЗАЦИИ SBJS С ЗАЩИТОЙ ОТ ПОВТОРНОГО ВЫЗОВА ---
-
-// Создаём глобальный флаг, чтобы код выполнился только один раз
-window.sbjsInitialized = window.sbjsInitialized || false;
-
-window.addEventListener("load", function () {
-    // Выполняем код, только если он не был запущен ранее
-    if (!window.sbjsInitialized) {
-        
-        // Сразу устанавливаем флаг, чтобы предотвратить повторный запуск
-        window.sbjsInitialized = true;
-        
-        console.log("Запускаем инициализацию Sourcebuster... (один раз)");
-
-        if (typeof sbjs !== 'undefined') {
-            sbjs.init({
-                callback: function(data) {
-                    console.log("Sourcebuster data:", data);
-
-                    const companyNameField = document.getElementById('company_name');
-                    
-                    if (companyNameField) {
-                        const sourceValue = data.src || 'n/a';
-                        console.log("Устанавливаем значение в поле:", sourceValue);
-                        companyNameField.value = sourceValue;
-                    } else {
-                        console.error("ОШИБКА: Поле с id='company_name' не найдено!");
-                    }
-                }
-            });
-        } else {
-            console.error("Sourcebuster.js (sbjs) is not loaded.");
-        }
-    } else {
-        console.log("Инициализация Sourcebuster уже была выполнена. Повторный запуск пропущен.");
-    }
-});
