@@ -340,20 +340,35 @@ $select.each(function () {
         });
     });
 
-// --- НОВЫЙ БЛОК ДЛЯ UTM-МЕТКИ ---
+// --- БЛОК ИНИЦИАЛИЗАЦИИ SOURCEBUSTER.JS (SBJS) ---
+// Этот код заменил старый обработчик UTM-меток
 window.addEventListener("DOMContentLoaded", function () {
-    // Ищем скрытое поле по его ID
-    const companyNameField = document.getElementById('company_name');
-    
-    // Если поле существует на странице
-    if (companyNameField) {
-        // Создаем объект для работы с параметрами URL
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Получаем значение параметра 'utm_source'
-        const utmSource = urlParams.get('utm_source');
-        
-        // Устанавливаем значение поля: если utmSource есть, используем его, иначе — 'n/a'
-        companyNameField.value = utmSource || 'n/a';
+    // Проверяем, что библиотека sbjs была загружена и доступна в window
+    if (typeof sbjs !== 'undefined') {
+
+        // Инициализируем библиотеку
+        sbjs.init({
+            // callback-функция выполнится после того, как sbjs соберёт все данные
+            callback: function(data) {
+                // Для отладки можно посмотреть, какие данные собрала библиотека
+                console.log("Sourcebuster data:", data); 
+
+                // Ищем скрытое поле 'company_name' по его ID
+                const companyNameField = document.getElementById('company_name');
+                
+                if (companyNameField) {
+                    // Заполняем поле. `data.src` это источник (аналог utm_source).
+                    // Если источника нет, устанавливаем 'n/a'.
+                    companyNameField.value = data.src || 'n/a';
+                }
+                
+                // Сюда можно добавить код для заполнения других скрытых полей,
+                // например, для utm_campaign (data.cmp) или utm_medium (data.mdm).
+            }
+        });
+
+    } else {
+        // Если sbjs не загрузилась, выводим ошибку в консоль
+        console.error("Sourcebuster.js (sbjs) is not loaded. Make sure the script is included on the page.");
     }
 });
