@@ -1,39 +1,3 @@
-// --- ФИНАЛЬНАЯ ВЕРСИЯ С РАЗДЕЛЕНИЕМ ЗАХВАТА И ПРИМЕНЕНИЯ ---
-
-// 1. ЗАХВАТ ДАННЫХ: Запускаем sbjs немедленно, как только этот скрипт загружается.
-// Это гарантирует, что мы поймаем URL с UTM-метками до того, как они могут исчезнуть.
-if (typeof sbjs !== 'undefined') {
-    sbjs.init();
-}
-
-// 2. ПРИМЕНЕНИЕ ДАННЫХ: После того как страница загрузилась и форма доступна.
-window.addEventListener("DOMContentLoaded", function () {
-    console.log("DOM загружен. Применяем данные из Sourcebuster...");
-
-    if (typeof sbjs !== 'undefined' && typeof sbjs.get !== 'undefined') {
-        
-        // Получаем данные, которые sbjs уже сохранил в cookie
-        const sbjsData = sbjs.get;
-        console.log("Прочитанные данные из sbjs.get:", sbjsData);
-
-        const companyNameField = document.getElementById('company_name');
-        
-        if (companyNameField) {
-            // `sbjs.get.current` содержит данные о текущей сессии.
-            // `sbjs.get.current.src` - это источник (utm_source).
-            const sourceValue = sbjsData.current.src || 'n/a';
-            
-            console.log("Устанавливаем значение в поле:", sourceValue);
-            companyNameField.value = sourceValue;
-        } else {
-            console.error("ОШИБКА: Поле с id='company_name' не найдено!");
-        }
-
-    } else {
-        console.error("Sourcebuster (sbjs) или sbjs.get не определены.");
-    }
-});
-
 const Webflow = window.Webflow || [];
 
 function addInputPhoneMask() {
@@ -375,3 +339,39 @@ $select.each(function () {
             },
         });
     });
+
+// --- ФИНАЛЬНАЯ ВЕРСИЯ С РАЗДЕЛЕНИЕМ ЗАХВАТА И ПРИМЕНЕНИЯ ---
+
+// 1. ЗАХВАТ ДАННЫХ: Запускаем sbjs немедленно, как только этот скрипт загружается.
+// Это гарантирует, что мы поймаем URL с UTM-метками до того, как они могут исчезнуть.
+if (typeof sbjs !== 'undefined') {
+    sbjs.init();
+}
+
+// 2. ПРИМЕНЕНИЕ ДАННЫХ: После того как страница загрузилась и форма доступна.
+window.addEventListener("DOMContentLoaded", function () {
+    console.log("DOM загружен. Применяем данные из Sourcebuster...");
+
+    if (typeof sbjs !== 'undefined' && typeof sbjs.get !== 'undefined') {
+        
+        // Получаем данные, которые sbjs уже сохранил в cookie
+        const sbjsData = sbjs.get;
+        console.log("Прочитанные данные из sbjs.get:", sbjsData);
+
+        const companyNameField = document.getElementById('company_name');
+        
+        if (companyNameField) {
+            // `sbjs.get.current` содержит данные о текущей сессии.
+            // `sbjs.get.current.src` - это источник (utm_source).
+            const sourceValue = sbjsData.current.src || 'n/a';
+            
+            console.log("Устанавливаем значение в поле:", sourceValue);
+            companyNameField.value = sourceValue;
+        } else {
+            console.error("ОШИБКА: Поле с id='company_name' не найдено!");
+        }
+
+    } else {
+        console.error("Sourcebuster (sbjs) или sbjs.get не определены.");
+    }
+});
