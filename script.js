@@ -10,7 +10,7 @@ window.addEventListener("load", function() {
         sbjs.init({
             callback: function(data) {
                 console.log("Sourcebuster data:", data);
-                const companyNameField = document.getElementById('company_name');
+                const companyNameField = document.querySelector('company_name');
                 if (companyNameField) {
                     // Используем .current, т.к. нам нужны данные текущей сессии
                     const sourceValue = data.current.src || 'n/a';
