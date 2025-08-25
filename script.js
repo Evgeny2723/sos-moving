@@ -59,7 +59,7 @@ window.addEventListener("load", function() {
                     autoplaySpeed: 2000,
                     nextArrow: t.find(".is-next"),
                     prevArrow: t.find(".is-prev"),
-                    dots: slidersArr[e].sliderDots.length === 1,
+                    dots: false,
                     appendDots: slidersArr[e].sliderDots,
                     responsive: [
                         { breakpoint: 991, settings: { slidesToShow: slidersArr[e].slidesToShowTablet } },
