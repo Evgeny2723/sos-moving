@@ -168,7 +168,7 @@ window.addEventListener("load", function() {
 
     const nav = $(".navbar");
     $(".article-content-area").length && $(".article-content-area").each(function () {
-        openDropdown($(this).find(".dropdown").eq(0));
+      //  openDropdown($(this).find(".dropdown").eq(0));
     });
 
     window.addEventListener("scroll", function (e) {
