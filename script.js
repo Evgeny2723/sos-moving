@@ -61,6 +61,7 @@ window.addEventListener("load", function() {
                     prevArrow: t.find(".is-prev"),
                     dots: false,
                     appendDots: slidersArr[e].sliderDots,
+                    adaptiveHeight: true,
                     responsive: [
                         { breakpoint: 991, settings: { slidesToShow: slidersArr[e].slidesToShowTablet } },
                         { breakpoint: 768, settings: { variableWidth: slidersArr[e].variableWidthMobile, slidesToShow: slidersArr[e].slidesToShowMobile } },
