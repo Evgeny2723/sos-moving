@@ -167,7 +167,6 @@ window.addEventListener("load", function() {
     addInputPhoneMask();
 
     const nav = $(".navbar");
-    openDropdown($(".dropdown").eq(0));
     $(".article-content-area").length && $(".article-content-area").each(function () {
         openDropdown($(this).find(".dropdown").eq(0));
     });
