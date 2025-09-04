@@ -99,6 +99,68 @@ window.addEventListener("load", function() {
             let t = $(".article-toc-list"), s = 97 + e, a = $(this).html();
             a.indexOf(". ") > -1 && (a = a.split(". ")[1]), $(this).attr("id", String.fromCharCode(s)), t.append('<li class="article-toc-item"><a href="#' + String.fromCharCode(s) + '" class="article-toc-link">' + a + "</a></li>");
         });
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    // --- АНИМАЦИЯ ОТДЕЛЬНЫХ ЛИНИЙ ---
+
+    // Находим все элементы-заполнители
+    const lineFills = gsap.utils.toArray(".steps-line-fill");
+
+    // Проходим по каждому и создаем для него свою анимацию
+    lineFills.forEach(line => {
+
+      // Находим ближайшего родителя с классом .step-item, он будет триггером
+      const triggerElement = line.closest(".step-item");
+
+      gsap.fromTo(line, 
+                  { height: "0%" }, // Начальное состояние (высота 0%)
+                  {
+        height: "100%", // Конечное состояние (высота 100%)
+        ease: "none",
+        scrollTrigger: {
+          trigger: triggerElement, // Триггер - родительский блок шага
+          start: "top 40%",      // Начинаем, когда верх шага доходит до 70% высоты экрана
+          end: "bottom 40%",     // Заканчиваем, когда низ шага доходит до 70% высоты экрана
+          scrub: true,
+        }
+      }
+                 );
+    });
+
+    // --- 2. АНИМАЦИЯ ЦИФР (OPACITY И ПУЛЬСАЦИЯ) ---
+
+    // Находим все элементы шагов
+    const steps = gsap.utils.toArray(".step-item");
+
+    // Проходим по каждому шагу и создаем для него свою анимацию
+    steps.forEach((step, index) => {
+      // Находим цифру внутри текущего шага
+      const number = step.querySelector(".step-number");
+
+      if (number) {
+        // Создаем временную шкалу анимации для каждой цифры
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: step, // Триггер - сам элемент шага
+            start: "top 40%", // Начинаем, когда верх шага достигает центра экрана
+            end: "bottom 40%", // Заканчиваем, когда низ шага покидает центр экрана
+            scrub: 0.8,
+          }
+        });
+
+        // Добавляем анимацию на временную шкалу
+        tl.to(number, {
+          opacity: 1,     // Делаем непрозрачным
+          scale: 1.15,    // Увеличиваем
+          duration: 0.3   // Длительность фазы увеличения
+        })
+          .to(number, {
+          scale: 1,       // Возвращаем к нормальному размеру
+          duration: 0.7   // Длительность фазы уменьшения
+        });
+      }
+    });
     });
 
     // --- Инициализация jQuery плагинов и обработчиков событий ---
