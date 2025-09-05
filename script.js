@@ -55,13 +55,11 @@ window.addEventListener("load", function() {
                     variableWidth: slidersArr[e].variableWidth,
                     slidesToScroll: 1,
                     autoplay: slidersArr[e].autoplay,
-                    adaptiveHeight: true,
                     autoplaySpeed: 2000,
                     nextArrow: t.find(".is-next"),
                     prevArrow: t.find(".is-prev"),
                     dots: false,
                     appendDots: slidersArr[e].sliderDots,
-                    adaptiveHeight: true,
                     responsive: [
                         { breakpoint: 991, settings: { slidesToShow: slidersArr[e].slidesToShowTablet } },
                         { breakpoint: 768, settings: { variableWidth: slidersArr[e].variableWidthMobile, slidesToShow: slidersArr[e].slidesToShowMobile } },
