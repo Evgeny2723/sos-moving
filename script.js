@@ -5,6 +5,31 @@ window.addEventListener("load", function() {
 
     console.log("Все ресурсы страницы загружены. Запускаем основной код.");
 
+    // --- Код для Multistep Form ---
+    const emailField = document.querySelector('[name="field_e_mail"]') || document.getElementById('field_e_mail');
+    const nextButton = document.querySelector('#next-step-btn');
+
+    function isValidEmail(email) {
+        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
+    }
+
+    function toggleNextButton() {
+        if (!isValidEmail(emailField.value)) {
+            nextButton.style.opacity = '0.5';
+            nextButton.style.pointerEvents = 'none';
+            emailField.classList.add('is-error');
+        } else {
+            nextButton.style.opacity = '1';
+            nextButton.style.pointerEvents = 'auto';
+            emailField.classList.remove('is-error');
+        }
+    }
+
+    if (emailField && nextButton) {
+        toggleNextButton();
+        emailField.addEventListener('input', toggleNextButton);
+    }
+
     // --- Код для Sourcebuster (sbjs) ---
     if (typeof sbjs !== 'undefined') {
         sbjs.init({
