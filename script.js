@@ -204,12 +204,19 @@ window.addEventListener("load", function() {
     $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
 
     $("body").on("click", ".dropdown-toggle", function () {
-    let e = $(this).parent(".dropdown");
-    
-    e.toggleClass("is-plus");
+    // Находим родительский элемент .dropdown
+    let dropdown = $(this).closest(".dropdown");
 
-    e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e);
-    closeDropdown(e.siblings(".is--open"));
+    // Закрываем все остальные "соседние" открытые дропдауны
+    let openSiblings = dropdown.siblings(".is--open");
+    closeDropdown(openSiblings);
+
+    // Переключаем состояние текущего дропдауна (открываем или закрываем)
+    if (dropdown.hasClass("is--open")) {
+        closeDropdown(dropdown);
+    } else {
+        openDropdown(dropdown);
+    }
 });
 
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
