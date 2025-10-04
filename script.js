@@ -203,34 +203,13 @@ window.addEventListener("load", function() {
     
     $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
 
-    function openDropdown(dropdown) {
-    dropdown.addClass("is--open");
-    // Только у иконки, у которой был .is-plus, убираем этот класс
-    dropdown.find(".dropdown-icon-minus.is-plus").removeClass("is-plus");
-    dropdown.find(".dropdown-content-wrapper").css({"height":"auto", "opacity":"1"});
-}
+    $("body").on("click", ".dropdown-toggle", function () {
 
-function closeDropdown(dropdown) {
-    dropdown.removeClass("is--open");
-    // Только первой (или той, у кого изначально был .is-plus) возвращаем этот класс
-    dropdown.find(".dropdown-icon-block .dropdown-icon-minus").first().addClass("is-plus");
-    dropdown.find(".dropdown-content-wrapper").css({"height":"0", "opacity":"0"});
-}
+        let e = $(this).parent(".dropdown");
 
+        e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e), closeDropdown(e.siblings(".is--open"));
 
-$("body").on("click", ".dropdown-toggle", function () {
-    let dropdown = $(this).closest(".dropdown");
-    let openSiblings = dropdown.siblings(".is--open");
-
-    closeDropdown(openSiblings);
-
-    if (dropdown.hasClass("is--open")) {
-        closeDropdown(dropdown); 
-    } else {
-        openDropdown(dropdown); 
-    }
-});
-
+    });
 
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
     $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
