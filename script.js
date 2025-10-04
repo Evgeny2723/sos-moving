@@ -204,18 +204,15 @@ window.addEventListener("load", function() {
     $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
 
     $("body").on("click", ".dropdown-toggle", function () {
-    // Находим родительский элемент .dropdown
     let dropdown = $(this).closest(".dropdown");
 
-    // Закрываем все остальные "соседние" открытые дропдауны
     let openSiblings = dropdown.siblings(".is--open");
     closeDropdown(openSiblings);
 
-    // Переключаем состояние текущего дропдауна (открываем или закрываем)
     if (dropdown.hasClass("is--open")) {
-        closeDropdown(dropdown);
+        closeDropdown(dropdown); 
     } else {
-        openDropdown(dropdown);
+        openDropdown(dropdown); 
     }
 });
 
