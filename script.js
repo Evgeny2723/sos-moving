@@ -206,7 +206,7 @@ window.addEventListener("load", function() {
     $("body").on("click", ".dropdown-toggle", function () {
     let e = $(this).parent(".dropdown");
     
-    $(this).toggleClass("is-plus");
+    e.toggleClass("is-plus");
 
     e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e);
     closeDropdown(e.siblings(".is--open"));
