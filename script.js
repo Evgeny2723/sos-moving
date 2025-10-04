@@ -204,9 +204,13 @@ window.addEventListener("load", function() {
     $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
 
     $("body").on("click", ".dropdown-toggle", function () {
-        let e = $(this).parent(".dropdown");
-        e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e), closeDropdown(e.siblings(".is--open"));
-    });
+    let e = $(this).parent(".dropdown");
+    
+    $(this).toggleClass("is-plus");
+
+    e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e);
+    closeDropdown(e.siblings(".is--open"));
+});
 
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
     $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
