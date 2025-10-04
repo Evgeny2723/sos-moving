@@ -203,10 +203,24 @@ window.addEventListener("load", function() {
     
     $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
 
-    $("body").on("click", ".dropdown-toggle", function () {
-    let dropdown = $(this).closest(".dropdown");
+    function openDropdown(dropdown) {
+    dropdown.addClass("is--open");
+    dropdown.find(".dropdown-icon-minus").addClass("is-plus"); // если нужно добавить
+    // Или, если активен, то убрать класс
+    // dropdown.find(".dropdown-icon-minus.is-plus").removeClass("is-plus"); 
+    dropdown.find(".dropdown-content-wrapper").css({"height":"auto", "opacity":"1"});
+}
 
+function closeDropdown(dropdown) {
+    dropdown.removeClass("is--open");
+    dropdown.find(".dropdown-icon-minus").removeClass("is-plus");
+    dropdown.find(".dropdown-content-wrapper").css({"height":"0", "opacity":"0"});
+}
+
+$("body").on("click", ".dropdown-toggle", function () {
+    let dropdown = $(this).closest(".dropdown");
     let openSiblings = dropdown.siblings(".is--open");
+
     closeDropdown(openSiblings);
 
     if (dropdown.hasClass("is--open")) {
@@ -215,6 +229,7 @@ window.addEventListener("load", function() {
         openDropdown(dropdown); 
     }
 });
+
 
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
     $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
