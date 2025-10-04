@@ -205,17 +205,18 @@ window.addEventListener("load", function() {
 
     function openDropdown(dropdown) {
     dropdown.addClass("is--open");
-    dropdown.find(".dropdown-icon-minus").addClass("is-plus"); // если нужно добавить
-    // Или, если активен, то убрать класс
-    // dropdown.find(".dropdown-icon-minus.is-plus").removeClass("is-plus"); 
+    // Только у иконки, у которой был .is-plus, убираем этот класс
+    dropdown.find(".dropdown-icon-minus.is-plus").removeClass("is-plus");
     dropdown.find(".dropdown-content-wrapper").css({"height":"auto", "opacity":"1"});
 }
 
 function closeDropdown(dropdown) {
     dropdown.removeClass("is--open");
-    dropdown.find(".dropdown-icon-minus").removeClass("is-plus");
+    // Только первой (или той, у кого изначально был .is-plus) возвращаем этот класс
+    dropdown.find(".dropdown-icon-block .dropdown-icon-minus").first().addClass("is-plus");
     dropdown.find(".dropdown-content-wrapper").css({"height":"0", "opacity":"0"});
 }
+
 
 $("body").on("click", ".dropdown-toggle", function () {
     let dropdown = $(this).closest(".dropdown");
