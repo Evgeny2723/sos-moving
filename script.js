@@ -204,34 +204,9 @@ window.addEventListener("load", function() {
     $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
 
     $("body").on("click", ".dropdown-toggle", function () {
-    // 1. Находим основные элементы: сам кликнутый заголовок и его родительский .dropdown
-    let clickedToggle = $(this);
-    let parentDropdown = clickedToggle.parent(".dropdown");
-
-    // 2. Находим иконку, высоту которой будем менять
-    let icon = clickedToggle.find(".dropdown-icon-minus.is-plus");
-
-    // 3. Закрываем все "соседние" открытые дропдауны (эффект аккордеона)
-    let openSiblings = parentDropdown.siblings(".is--open");
-    if (openSiblings.length) {
-        closeDropdown(openSiblings); // Вызываем вашу функцию закрытия
-        // Устанавливаем высоту иконок у закрытых "соседей" в 0.75rem
-        openSiblings.find(".dropdown-icon-minus.is-plus").css("height", "0.75rem");
-    }
-
-    // 4. Переключаем состояние текущего дропдауна
-    if (parentDropdown.hasClass("is--open")) {
-        // Если он был открыт -> закрываем его
-        closeDropdown(parentDropdown);
-        // Устанавливаем высоту иконки в 0.75rem (состояние "закрыто")
-        icon.css("height", "0.75rem");
-    } else {
-        // Если он был закрыт -> открываем его
-        openDropdown(parentDropdown);
-        // Устанавливаем высоту иконки в 0rem (состояние "открыто")
-        icon.css("height", "0rem");
-    }
-});
+        let e = $(this).parent(".dropdown");
+        e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e), closeDropdown(e.siblings(".is--open"));
+    });
 
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
     $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
