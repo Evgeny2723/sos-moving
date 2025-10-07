@@ -30,7 +30,23 @@ window.addEventListener("load", function() {
         emailField.addEventListener('input', toggleNextButton);
     }
 
-   
+   // --- Код для Sourcebuster (sbjs) ---
+    if (typeof sbjs !== 'undefined') {
+        sbjs.init({
+            callback: function(data) {
+                console.log("Sourcebuster data:", data);
+                const companyNameField = document.querySelector('company_name');
+                if (companyNameField) {
+                    // Используем .current, т.к. нам нужны данные текущей сессии
+                    const sourceValue = data.current.src || 'n/a';
+                    companyNameField.value = sourceValue;
+                    console.log(`Поле company_name заполнено значением: ${sourceValue}`);
+                }
+            }
+        });
+    } else {
+        console.error("Библиотека sbjs не найдена.");
+    }
 
     // --- Код, который зависит от Webflow и jQuery ---
     const Webflow = window.Webflow || [];
