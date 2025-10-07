@@ -30,7 +30,7 @@ window.addEventListener("load", function() {
         emailField.addEventListener('input', toggleNextButton);
     }
 
-    // --- Код для Sourcebuster (sbjs) ---
+    <!-- // --- Код для Sourcebuster (sbjs) ---
     if (typeof sbjs !== 'undefined') {
         sbjs.init({
             callback: function(data) {
@@ -46,7 +46,7 @@ window.addEventListener("load", function() {
         });
     } else {
         console.error("Библиотека sbjs не найдена.");
-    }
+    } -->
 
     // --- Код, который зависит от Webflow и jQuery ---
     const Webflow = window.Webflow || [];
