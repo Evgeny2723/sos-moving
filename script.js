@@ -5,7 +5,7 @@ window.addEventListener("load", function() {
 
     console.log("Все ресурсы страницы загружены. Запускаем основной код.");
 
-    // --- Код для Multistep Form ---
+    // --- ПРИОРИТЕТ 1: Код для Multistep Form (валидация email) ---
     const emailField = document.querySelector('[name="field_e_mail"]') || document.getElementById('field_e_mail');
     const nextButton = document.querySelector('#next-step-btn');
 
@@ -30,28 +30,89 @@ window.addEventListener("load", function() {
         emailField.addEventListener('input', toggleNextButton);
     }
 
-   // --- Код для Sourcebuster (sbjs) ---
-    if (typeof sbjs !== 'undefined') {
-        sbjs.init({
-            callback: function(data) {
-                console.log("Sourcebuster data:", data);
-                const companyNameField = document.querySelector('company_name');
-                if (companyNameField) {
-                    // Используем .current, т.к. нам нужны данные текущей сессии
-                    const sourceValue = data.current.src || 'n/a';
-                    companyNameField.value = sourceValue;
-                    console.log(`Поле company_name заполнено значением: ${sourceValue}`);
+    // --- ПРИОРИТЕТ 2: Инициализация маски для телефонных полей ---
+    addInputPhoneMask();
+
+    // --- ПРИОРИТЕТ 3: Инициализация datepicker и select2 для полей формы ---
+    let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+    $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
+    $(".is-select").select2({ minimumResultsForSearch: -1, dropdownCssClass: "select-dropdown" });
+
+    // --- ПРИОРИТЕТ 4: Код для Google Autocomplete (поля адресов) ---
+    $.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (e, t) {
+        function s(e, t) { s.__super__.constructor.call(this, e, t); }
+        return (t.Extend(s, e), s.prototype.query = function (e, t) {
+            var s = function (e, s) {
+                var a = { results: [] };
+                if (s != google.maps.places.PlacesServiceStatus.OK && t(a), e.length)
+                    for (var i = 0; i < e.length; i++) a.results.push({ id: e[i].place_id.toString(), text: e[i].description.toString() });
+                a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a);
+            };
+            if (e.term && "" != e.term) new google.maps.places.AutocompleteService().getPlacePredictions({ input: e.term }, s);
+            else { var a = { results: [] }; a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a); }
+        }, s);
+    });
+    var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
+    var $select = $(".is-address-autocomplate");
+    $select.each(function () {
+        $(this).select2({
+            width: "100%", dataAdapter: googleAutocompleteAdapter, placeholder: $(this).attr("select2-placeholder"),
+            escapeMarkup: function (e) { return e; },
+            minimumInputLength: 2, templateResult: formatRepo, templateSelection: formatRepoSelection,
+        }),
+        $(this).on("select2:select", function (e) {
+            getDetails($(e.currentTarget).find("option:selected").val(), e.currentTarget);
+        });
+    });
+
+    // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
+    var forms = document.querySelectorAll("form");
+    forms.length && forms.forEach((e) => { e.setAttribute("novalidate", ""); });
+    
+    $(".blog-category-list").length && $(".blog-category-list").prepend('<div role="listitem" class="w-dyn-item"><a href="/blog" aria-current="page" class="blog-category-link w--current">All Articles</a></div>');
+
+    $("form").length && ($("form").each(function () {
+        $(this).hasClass("referer-form") || ($(this).attr("data-api-redirect", $(this).attr("redirect")), $(this).removeAttr("redirect data-redirect"));
+        $(".services-hero-h1").length ? ($(this).attr("data-name", "Form in " + $(".services-hero-h1").html() + " Page."), $(this).attr("name", "Form in " + $(".services-hero-h1").html() + " Page.")) : ($(this).attr("data-name", "Form in " + $("title").text() + "."), $(this).attr("name", "Form in " + $("title").text() + "."));
+    }),
+    $(".bottom-cta-wrapper form").length && ($(".services-hero-section form").length ? $(".bottom-cta-wrapper form").attr("redirect", $(".services-hero-section form").attr("redirect")) : $(".bottom-cta-wrapper form").attr("redirect", "/confirmation-page")));
+    
+    $("form").on("submit", function () {
+        var e = $(this), s = e.attr("data-api-redirect"), a = e.find('[type="submit"]'), i = a.val();
+        if (e.hasClass("referer-form")) return;
+        a.val(a.data("wait"));
+        var t = { data: formToObj(e) };
+        var o = new Date();
+        var r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
+        t.data.provider_id = 50;
+        t.data.field_last_name = "n/a";
+        if (!t.data.field_date) { t.data.field_date = r; }
+        for (const key in t.data) {
+            if (t.data[key] === null || t.data[key] === "") {
+                switch (key) {
+                    case "moving_from_zip": case "moving_to_zip": t.data[key] = "00000"; break;
+                    case "field_move_service_type": t.data[key] = 0; break;
+                    default: t.data[key] = "n/a";
                 }
             }
+        }
+        t = JSON.stringify(t);
+        console.log("Отправляемые данные:", t);
+        var l = $(this).siblings(".w-form-fail");
+        $.ajax({
+            url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
+            type: "POST", dataType: "text", data: t, contentType: "application/json",
+            statusCode: { 400: function (e) { var t = JSON.parse(e); l.html(t.status_message), l.show(), a.val(i); } },
+            success: function (e) { var t = JSON.parse(e); t.status ? (window.location = s) : (l.html(t.status_message), l.show()), a.val(i); },
+            error: function (e, t, s) { l.html(t.status_message), l.show(), a.val(i); },
         });
-    } else {
-        console.error("Библиотека sbjs не найдена.");
-    }
+    });
 
     // --- Код, который зависит от Webflow и jQuery ---
     const Webflow = window.Webflow || [];
     Webflow.push(function () {
-        // Код для Slick Slider
+        
+        // --- ПРИОРИТЕТ 6: Код для Slick Slider (свайпер) ---
         if ($(".is-have-slider").length) {
             let slidersArr = [];
             $(".is-have-slider").each(function (e) {
@@ -94,6 +155,25 @@ window.addEventListener("load", function() {
             });
         }
 
+        // --- ПРИОРИТЕТ 7: Код для navbar (навбар) ---
+        const nav = $(".navbar");
+        window.addEventListener("scroll", function (e) {
+            let t = e.target.scrollingElement.scrollTop;
+            t > 10 ? nav.hasClass("is-fixed") || nav.addClass("is-fixed") : nav.hasClass("is-fixed") && nav.removeClass("is-fixed");
+        });
+
+        // --- ПРИОРИТЕТ 8: Dropdown функциональность ---
+        $(".article-content-area").length && $(".article-content-area").each(function () {
+          //  openDropdown($(this).find(".dropdown").eq(0));
+        });
+
+        $("body").on("click", ".dropdown-toggle", function () {
+            let e = $(this).parent(".dropdown");
+            e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e), closeDropdown(e.siblings(".is--open"));
+        });
+
+        // --- Остальные второстепенные функции ---
+        
         // Код для пагинации
         if ($(".w-page-count").length) {
             let e = $(window).width() < 768 ? 4 : 10;
@@ -113,6 +193,8 @@ window.addEventListener("load", function() {
             });
         }
 
+        $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
+
         // Остальной код из Webflow.push
         $(".services-section + .why-sos-section").length && $(".services-section").addClass("is-mb-0");
         $(".service-content-section + .services-section").length && $(".services-section").prev(".service-content-section").addClass("is-mb-0");
@@ -125,162 +207,71 @@ window.addEventListener("load", function() {
             a.indexOf(". ") > -1 && (a = a.split(". ")[1]), $(this).attr("id", String.fromCharCode(s)), t.append('<li class="article-toc-item"><a href="#' + String.fromCharCode(s) + '" class="article-toc-link">' + a + "</a></li>");
         });
 
-    gsap.registerPlugin(ScrollTrigger);
+        // GSAP анимации
+        gsap.registerPlugin(ScrollTrigger);
 
-    // --- АНИМАЦИЯ ОТДЕЛЬНЫХ ЛИНИЙ ---
+        // --- АНИМАЦИЯ ОТДЕЛЬНЫХ ЛИНИЙ ---
+        const lineFills = gsap.utils.toArray(".steps-line-fill");
+        lineFills.forEach(line => {
+          const triggerElement = line.closest(".step-item");
+          gsap.fromTo(line, 
+                      { height: "0%" },
+                      {
+            height: "100%",
+            ease: "none",
+            scrollTrigger: {
+              trigger: triggerElement,
+              start: "top 40%",
+              end: "bottom 40%",
+              scrub: true,
+            }
+          }
+                     );
+        });
 
-    // Находим все элементы-заполнители
-    const lineFills = gsap.utils.toArray(".steps-line-fill");
-
-    // Проходим по каждому и создаем для него свою анимацию
-    lineFills.forEach(line => {
-
-      // Находим ближайшего родителя с классом .step-item, он будет триггером
-      const triggerElement = line.closest(".step-item");
-
-      gsap.fromTo(line, 
-                  { height: "0%" }, // Начальное состояние (высота 0%)
-                  {
-        height: "100%", // Конечное состояние (высота 100%)
-        ease: "none",
-        scrollTrigger: {
-          trigger: triggerElement, // Триггер - родительский блок шага
-          start: "top 40%",      // Начинаем, когда верх шага доходит до 70% высоты экрана
-          end: "bottom 40%",     // Заканчиваем, когда низ шага доходит до 70% высоты экрана
-          scrub: true,
-        }
-      }
-                 );
-    });
-
-    // --- 2. АНИМАЦИЯ ЦИФР (OPACITY И ПУЛЬСАЦИЯ) ---
-
-    // Находим все элементы шагов
-    const steps = gsap.utils.toArray(".step-item");
-
-    // Проходим по каждому шагу и создаем для него свою анимацию
-    steps.forEach((step, index) => {
-      // Находим цифру внутри текущего шага
-      const number = step.querySelector(".step-number");
-
-      if (number) {
-        // Создаем временную шкалу анимации для каждой цифры
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: step, // Триггер - сам элемент шага
-            start: "top 40%", // Начинаем, когда верх шага достигает центра экрана
-            end: "bottom 40%", // Заканчиваем, когда низ шага покидает центр экрана
-            scrub: 0.8,
+        // --- АНИМАЦИЯ ЦИФР (OPACITY И ПУЛЬСАЦИЯ) ---
+        const steps = gsap.utils.toArray(".step-item");
+        steps.forEach((step, index) => {
+          const number = step.querySelector(".step-number");
+          if (number) {
+            const tl = gsap.timeline({
+              scrollTrigger: {
+                trigger: step,
+                start: "top 40%",
+                end: "bottom 40%",
+                scrub: 0.8,
+              }
+            });
+            tl.to(number, {
+              opacity: 1,
+              scale: 1.15,
+              duration: 0.3
+            })
+              .to(number, {
+              scale: 1,
+              duration: 0.7
+            });
           }
         });
-
-        // Добавляем анимацию на временную шкалу
-        tl.to(number, {
-          opacity: 1,     // Делаем непрозрачным
-          scale: 1.15,    // Увеличиваем
-          duration: 0.3   // Длительность фазы увеличения
-        })
-          .to(number, {
-          scale: 1,       // Возвращаем к нормальному размеру
-          duration: 0.7   // Длительность фазы уменьшения
-        });
-      }
-    });
     });
 
-    // --- Инициализация jQuery плагинов и обработчиков событий ---
-    addInputPhoneMask();
-
-    const nav = $(".navbar");
-    $(".article-content-area").length && $(".article-content-area").each(function () {
-      //  openDropdown($(this).find(".dropdown").eq(0));
-    });
-
-    window.addEventListener("scroll", function (e) {
-        let t = e.target.scrollingElement.scrollTop;
-        t > 10 ? nav.hasClass("is-fixed") || nav.addClass("is-fixed") : nav.hasClass("is-fixed") && nav.removeClass("is-fixed");
-    });
-    
-    $(".reviews-collection-grid").masonry({ itemSelector: ".reviews-collection-item" });
-
-    $("body").on("click", ".dropdown-toggle", function () {
-        let e = $(this).parent(".dropdown");
-        e.hasClass("is--open") ? closeDropdown(e) : openDropdown(e), closeDropdown(e.siblings(".is--open"));
-    });
-
-    let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
-    $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
-    $(".is-select").select2({ minimumResultsForSearch: -1, dropdownCssClass: "select-dropdown" });
-
-    // --- Код для Google Autocomplete ---
-    $.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (e, t) {
-        function s(e, t) { s.__super__.constructor.call(this, e, t); }
-        return (t.Extend(s, e), s.prototype.query = function (e, t) {
-            var s = function (e, s) {
-                var a = { results: [] };
-                if (s != google.maps.places.PlacesServiceStatus.OK && t(a), e.length)
-                    for (var i = 0; i < e.length; i++) a.results.push({ id: e[i].place_id.toString(), text: e[i].description.toString() });
-                a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a);
-            };
-            if (e.term && "" != e.term) new google.maps.places.AutocompleteService().getPlacePredictions({ input: e.term }, s);
-            else { var a = { results: [] }; a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a); }
-        }, s);
-    });
-    var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
-    var $select = $(".is-address-autocomplate");
-    $select.each(function () {
-        $(this).select2({
-            width: "100%", dataAdapter: googleAutocompleteAdapter, placeholder: $(this).attr("select2-placeholder"),
-            escapeMarkup: function (e) { return e; },
-            minimumInputLength: 2, templateResult: formatRepo, templateSelection: formatRepoSelection,
-        }),
-        $(this).on("select2:select", function (e) {
-            getDetails($(e.currentTarget).find("option:selected").val(), e.currentTarget);
-        });
-    });
-
-    // --- Код для обработки форм ---
-    var forms = document.querySelectorAll("form");
-    forms.length && forms.forEach((e) => { e.setAttribute("novalidate", ""); });
-    
-    $(".blog-category-list").length && $(".blog-category-list").prepend('<div role="listitem" class="w-dyn-item"><a href="/blog" aria-current="page" class="blog-category-link w--current">All Articles</a></div>');
-
-    $("form").length && ($("form").each(function () {
-        $(this).hasClass("referer-form") || ($(this).attr("data-api-redirect", $(this).attr("redirect")), $(this).removeAttr("redirect data-redirect"));
-        $(".services-hero-h1").length ? ($(this).attr("data-name", "Form in " + $(".services-hero-h1").html() + " Page."), $(this).attr("name", "Form in " + $(".services-hero-h1").html() + " Page.")) : ($(this).attr("data-name", "Form in " + $("title").text() + "."), $(this).attr("name", "Form in " + $("title").text() + "."));
-    }),
-    $(".bottom-cta-wrapper form").length && ($(".services-hero-section form").length ? $(".bottom-cta-wrapper form").attr("redirect", $(".services-hero-section form").attr("redirect")) : $(".bottom-cta-wrapper form").attr("redirect", "/confirmation-page")));
-    
-    $("form").on("submit", function () {
-        var e = $(this), s = e.attr("data-api-redirect"), a = e.find('[type="submit"]'), i = a.val();
-        if (e.hasClass("referer-form")) return;
-        a.val(a.data("wait"));
-        var t = { data: formToObj(e) };
-        var o = new Date();
-        var r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
-        t.data.provider_id = 50;
-        t.data.field_last_name = "n/a";
-        if (!t.data.field_date) { t.data.field_date = r; }
-        for (const key in t.data) {
-            if (t.data[key] === null || t.data[key] === "") {
-                switch (key) {
-                    case "moving_from_zip": case "moving_to_zip": t.data[key] = "00000"; break;
-                    case "field_move_service_type": t.data[key] = 0; break;
-                    default: t.data[key] = "n/a";
+    // --- Код для Sourcebuster (sbjs) - низкий приоритет ---
+    if (typeof sbjs !== 'undefined') {
+        sbjs.init({
+            callback: function(data) {
+                console.log("Sourcebuster data:", data);
+                const companyNameField = document.querySelector('company_name');
+                if (companyNameField) {
+                    const sourceValue = data.current.src || 'n/a';
+                    companyNameField.value = sourceValue;
+                    console.log(`Поле company_name заполнено значением: ${sourceValue}`);
                 }
             }
-        }
-        t = JSON.stringify(t);
-        console.log("Отправляемые данные:", t);
-        var l = $(this).siblings(".w-form-fail");
-        $.ajax({
-            url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
-            type: "POST", dataType: "text", data: t, contentType: "application/json",
-            statusCode: { 400: function (e) { var t = JSON.parse(e); l.html(t.status_message), l.show(), a.val(i); } },
-            success: function (e) { var t = JSON.parse(e); t.status ? (window.location = s) : (l.html(t.status_message), l.show()), a.val(i); },
-            error: function (e, t, s) { l.html(t.status_message), l.show(), a.val(i); },
         });
-    });
+    } else {
+        console.error("Библиотека sbjs не найдена.");
+    }
+
 });
 
 // --- ОБЪЯВЛЕНИЯ ВСЕХ ФУНКЦИЙ ---
