@@ -1,10 +1,3 @@
-// --- ПОЛНАЯ РАБОЧАЯ ВЕРСИЯ СКРИПТА ---
-
-// ШАГ 1: Ждём полной загрузки всех ресурсов страницы (включая jQuery, sbjs и т.д.)
-window.addEventListener("load", function() {
-
-    console.log("Все ресурсы страницы загружены. Запускаем основной код.");
-
     // --- ПРИОРИТЕТ 1: Код для Multistep Form (валидация email) ---
     const emailField = document.querySelector('[name="field_e_mail"]') || document.getElementById('field_e_mail');
     const nextButton = document.querySelector('#next-step-btn');
@@ -272,7 +265,7 @@ window.addEventListener("load", function() {
         console.error("Библиотека sbjs не найдена.");
     }
 
-});
+
 
 // --- ОБЪЯВЛЕНИЯ ВСЕХ ФУНКЦИЙ ---
 function addInputPhoneMask() {
