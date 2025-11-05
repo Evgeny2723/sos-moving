@@ -88,7 +88,7 @@
             if (t.data[key] === null || t.data[key] === "") {
                 switch (key) {
                     case "moving_from_zip": case "moving_to_zip": t.data[key] = "00000"; break;
-                    case "field_move_service_type": t.data[key] = 0; break;
+                    case "move_size": t.data[key] = 0; break;
                     default: t.data[key] = "n/a";
                 }
             }
