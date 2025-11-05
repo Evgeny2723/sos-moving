@@ -26,7 +26,11 @@
     // --- ПРИОРИТЕТ 2: Инициализация маски для телефонных полей ---
     addInputPhoneMask();
 
-    // --- ПРИОРИТЕТ 3: Инициализация datepicker и select2 для полей формы ---
+    // --- Код, который зависит от Webflow и jQuery ---
+    const Webflow = window.Webflow || [];
+    Webflow.push(function () {
+
+        // --- ПРИОРИТЕТ 3: Инициализация datepicker и select2 для полей формы ---
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
     $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
     $(".is-select").select2({ minimumResultsForSearch: -1, dropdownCssClass: "select-dropdown" });
@@ -100,10 +104,6 @@
             error: function (e, t, s) { l.html(t.status_message), l.show(), a.val(i); },
         });
     });
-
-    // --- Код, который зависит от Webflow и jQuery ---
-    const Webflow = window.Webflow || [];
-    Webflow.push(function () {
         
         // --- ПРИОРИТЕТ 6: Код для Slick Slider (свайпер) ---
         if ($(".is-have-slider").length) {
