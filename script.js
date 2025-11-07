@@ -40,6 +40,7 @@
         function s(e, t) { s.__super__.constructor.call(this, e, t); }
         return (t.Extend(s, e), s.prototype.query = function (e, t) {
             var s = function (e, s) {
+                console.log("ОТВЕТ ОТ GOOGLE API:", s);
                 var a = { results: [] };
                 if (s != google.maps.places.PlacesServiceStatus.OK && t(a), e.length)
                     for (var i = 0; i < e.length; i++) a.results.push({ id: e[i].place_id.toString(), text: e[i].description.toString() });
