@@ -36,75 +36,32 @@
     $(".is-select").select2({ minimumResultsForSearch: -1, dropdownCssClass: "select-dropdown" });
 
     // --- ПРИОРИТЕТ 4: Код для Google Autocomplete (поля адресов) ---
-$.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (e, t) {
-    function s(e, t) { s.__super__.constructor.call(this, e, t); }
-    return (t.Extend(s, e), s.prototype.query = function (e, t) {
-        var s = function (e, s) {
-            var a = { results: [] };
-            // Добавлено для отладки: выводим статус ответа от Google
-            console.log("GOOGLE STATUS:", s); 
-            
-            if (s != google.maps.places.PlacesServiceStatus.OK && t(a), e.length)
-                for (var i = 0; i < e.length; i++) a.results.push({ id: e[i].place_id.toString(), text: e[i].description.toString() });
-            a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a);
-        };
-        // Проверяем, загружен ли Google Maps API
-        if (typeof google === 'undefined' || typeof google.maps === 'undefined' || typeof google.maps.places === 'undefined') {
-            console.error("КРИТИЧЕСКАЯ ОШИБКА: Google Maps API не загружен или загружен некорректно.");
-            return t({ results: [{ id: 'ERROR', text: 'Ошибка: Google Maps API не найден', disabled: true }] });
-        }
-        
-        if (e.term && "" != e.term) {
-        var request = {
-            input: e.term,
-            types: ['address'] // Убрано ограничение по стране
-        };
-
-        console.log("ПОИСКОВЫЙ ТЕРМИН:", e.term);
-                new google.maps.places.AutocompleteService().getPlacePredictions(request, s);
-            } else { 
-                var a = { results: [] }; 
-                a.results.push({ id: " ", text: "Введите адрес", disabled: true }), t(a); 
-            }
+    $.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (e, t) {
+        function s(e, t) { s.__super__.constructor.call(this, e, t); }
+        return (t.Extend(s, e), s.prototype.query = function (e, t) {
+            var s = function (e, s) {
+                console.log("ОТВЕТ ОТ GOOGLE API:", s);
+                var a = { results: [] };
+                if (s != google.maps.places.PlacesServiceStatus.OK && t(a), e.length)
+                    for (var i = 0; i < e.length; i++) a.results.push({ id: e[i].place_id.toString(), text: e[i].description.toString() });
+                a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a);
+            };
+            if (e.term && "" != e.term) new google.maps.places.AutocompleteService().getPlacePredictions({ input: e.term }, s);
+            else { var a = { results: [] }; a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a); }
         }, s);
-});
-
-var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
-
-// Ищем оригинальные элементы, которые мы хотим превратить в Select2
-var $addressInputs = $('input.is-address-autocomplate, select.is-address-autocomplate');
-
-if ($addressInputs.length) {
-    $addressInputs.each(function () {
-        var $originalInput = $(this);
-        
-        // Предотвращаем повторную инициализацию, если уже Select2
-        if ($originalInput.hasClass('select2-hidden-accessible')) {
-             console.warn("Select2 уже был применен к элементу:", $originalInput.attr('name'));
-             return; // Пропускаем элемент
-        }
-
-        $originalInput.select2({
-            width: "100%", 
-            dataAdapter: googleAutocompleteAdapter, 
-            placeholder: $originalInput.attr("select2-placeholder") || 'Начните вводить адрес...',
-            escapeMarkup: function (e) { return e; },
-            minimumInputLength: 2, 
-            templateResult: formatRepo, 
-            templateSelection: formatRepoSelection,
-        });
-
-        // Обработчик выбора
-        $originalInput.on("select2:select", function (e) {
-            getDetails($(this).val(), this); // Используем this для ссылки на оригинальный DOM-элемент
-        });
-        
-        console.log("Google Autocomplete успешно применен к полю:", $originalInput.attr('name'));
     });
-} else {
-    console.warn("Не найдено ни одного поля с классом .is-address-autocomplate");
-}
-// --- Конец ПРИОРИТЕТА 4 ---
+    var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
+    var $select = $(".is-address-autocomplate");
+    $select.each(function () {
+        $(this).select2({
+            width: "100%", dataAdapter: googleAutocompleteAdapter, placeholder: $(this).attr("select2-placeholder"),
+            escapeMarkup: function (e) { return e; },
+            minimumInputLength: 2, templateResult: formatRepo, templateSelection: formatRepoSelection,
+        }),
+        $(this).on("select2:select", function (e) {
+            getDetails($(e.currentTarget).find("option:selected").val(), e.currentTarget);
+        });
+    });
 
     // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
     var forms = document.querySelectorAll("form");
