@@ -248,25 +248,6 @@
         });
     });
 
-    // --- Код для Sourcebuster (sbjs) - низкий приоритет ---
-    if (typeof sbjs !== 'undefined') {
-        sbjs.init({
-            callback: function(data) {
-                console.log("Sourcebuster data:", data);
-                const companyNameField = document.querySelector('company_name');
-                if (companyNameField) {
-                    const sourceValue = data.current.src || 'n/a';
-                    companyNameField.value = sourceValue;
-                    console.log(`Поле company_name заполнено значением: ${sourceValue}`);
-                }
-            }
-        });
-    } else {
-        console.error("Библиотека sbjs не найдена.");
-    }
-
-
-
 // --- ОБЪЯВЛЕНИЯ ВСЕХ ФУНКЦИЙ ---
 function addInputPhoneMask() {
     let e = document.querySelectorAll("input.is-phone"), t = /\D/g, s = (e) => e.value.replace(t, ""),
