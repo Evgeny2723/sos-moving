@@ -55,11 +55,12 @@ $.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data
         }
         
         if (e.term && "" != e.term) {
-                var request = {
-                    input: e.term,
-                    types: ['address'], // Ищем только полные адреса
-                    componentRestrictions: { country: ["us"] } // <--- ДОБАВЛЕНО: ограничение поиска США
-                };
+        var request = {
+            input: e.term,
+            types: ['address'] // Убрано ограничение по стране
+        };
+
+        console.log("ПОИСКОВЫЙ ТЕРМИН:", e.term);
                 new google.maps.places.AutocompleteService().getPlacePredictions(request, s);
             } else { 
                 var a = { results: [] }; 
