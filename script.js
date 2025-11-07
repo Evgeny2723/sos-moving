@@ -54,9 +54,18 @@ $.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data
             return t({ results: [{ id: 'ERROR', text: 'Ошибка: Google Maps API не найден', disabled: true }] });
         }
         
-        if (e.term && "" != e.term) new google.maps.places.AutocompleteService().getPlacePredictions({ input: e.term }, s);
-        else { var a = { results: [] }; a.results.push({ id: " ", text: "Введите адрес", disabled: true }), t(a); }
-    }, s);
+        if (e.term && "" != e.term) {
+                var request = {
+                    input: e.term,
+                    types: ['address'], // Ищем только полные адреса
+                    componentRestrictions: { country: ["us"] } // <--- ДОБАВЛЕНО: ограничение поиска США
+                };
+                new google.maps.places.AutocompleteService().getPlacePredictions(request, s);
+            } else { 
+                var a = { results: [] }; 
+                a.results.push({ id: " ", text: "Введите адрес", disabled: true }), t(a); 
+            }
+        }, s);
 });
 
 var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
