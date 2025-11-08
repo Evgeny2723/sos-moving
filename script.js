@@ -35,33 +35,55 @@
     $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
     $(".is-select").select2({ minimumResultsForSearch: -1, dropdownCssClass: "select-dropdown" });
 
-    // --- ПРИОРИТЕТ 4: Код для Google Autocomplete (поля адресов) ---
-    $.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (e, t) {
-        function s(e, t) { s.__super__.constructor.call(this, e, t); }
-        return (t.Extend(s, e), s.prototype.query = function (e, t) {
-            var s = function (e, s) {
-                console.log("ОТВЕТ ОТ GOOGLE API:", s);
-                var a = { results: [] };
-                if (s != google.maps.places.PlacesServiceStatus.OK && t(a), e.length)
-                    for (var i = 0; i < e.length; i++) a.results.push({ id: e[i].place_id.toString(), text: e[i].description.toString() });
-                a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a);
-            };
-            if (e.term && "" != e.term) new google.maps.places.AutocompleteService().getPlacePredictions({ input: e.term }, s);
-            else { var a = { results: [] }; a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a); }
-        }, s);
+    // --- ПРИОРИТЕТ 4: Код для Google Autocomplete (Поля адресов, новый API) ---
+$.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (ArrayAdapter, Utils) {
+    function GoogleAdapter ($element, options) {
+        GoogleAdapter.__super__.constructor.call(this, $element, options);
+    }
+    Utils.Extend(GoogleAdapter, ArrayAdapter);
+
+    GoogleAdapter.prototype.query = function (params, callback) {
+        var autocomplete = new google.maps.places.AutocompleteSuggestion();
+        if (params.term && params.term.length >= 2) {
+            autocomplete.getQueryPredictions(
+                { input: params.term },
+                function(predictions, status) {
+                    console.log("ОТВЕТ ОТ GOOGLE API:", status, predictions);
+                    var results = [];
+                    if (status === "OK" && predictions && predictions.length) {
+                        for (var i = 0; i < predictions.length; i++) {
+                            results.push({
+                                id: predictions[i].place_id || predictions[i].predictionId,
+                                text: predictions[i].description
+                            });
+                        }
+                    }
+                    results.push({ id: " ", text: "Powered by Google", disabled: true });
+                    callback({ results: results });
+                }
+            );
+        } else {
+            callback({ results: [{ id: " ", text: "Powered by Google", disabled: true }] });
+        }
+    };
+    return GoogleAdapter;
+});
+
+var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
+var $select = $(".is-address-autocomplate");
+$select.each(function () {
+    $(this).select2({
+        width: "100%",
+        dataAdapter: googleAutocompleteAdapter,
+        placeholder: $(this).attr("select2-placeholder"),
+        escapeMarkup: function (e) { return e; },
+        minimumInputLength: 2,
+        templateResult: formatRepo,
+        templateSelection: formatRepoSelection,
+    }).on("select2:select", function (e) {
+        getDetails($(e.currentTarget).find("option:selected").val(), e.currentTarget);
     });
-    var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
-    var $select = $(".is-address-autocomplate");
-    $select.each(function () {
-        $(this).select2({
-            width: "100%", dataAdapter: googleAutocompleteAdapter, placeholder: $(this).attr("select2-placeholder"),
-            escapeMarkup: function (e) { return e; },
-            minimumInputLength: 2, templateResult: formatRepo, templateSelection: formatRepoSelection,
-        }),
-        $(this).on("select2:select", function (e) {
-            getDetails($(e.currentTarget).find("option:selected").val(), e.currentTarget);
-        });
-    });
+});
 
     // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
     var forms = document.querySelectorAll("form");
