@@ -94,9 +94,11 @@
         }
     });
 }
-        $('.is-form-button').on('click', function() {
-    // код для показа/смены шага
+        Webflow.push(function() {
     initSelect2AddressFields();
+    $('.your-next-step-button').on('click', function(){
+        setTimeout(initSelect2AddressFields, 250);
+    });
 });
         
     // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
