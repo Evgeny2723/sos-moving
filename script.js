@@ -36,6 +36,26 @@
     // --- ПРИОРИТЕТ 2: Инициализация маски для телефонных полей ---
     addInputPhoneMask();
 
+            function initSelect2AddressFields() {
+                $(".is-address-autocomplate.w-input:visible").each(function () {
+                    // check not already initialized (защита от двойной инициализации)
+                    if (!$(this).data("select2")) {
+                        $(this).select2({
+                            width: "100%",
+                            dataAdapter: googleAutocompleteAdapter,
+                            placeholder: $(this).attr("select2-placeholder"),
+                            escapeMarkup: function (e) { return e; },
+                            minimumInputLength: 2,
+                            templateResult: formatRepo,
+                            templateSelection: formatRepoSelection,
+                        }).on("select2:select", function (e) {
+                            var placeId = e.params.data.id;
+                            getDetails(placeId, this);
+                        });
+                    }
+                });
+            }
+
     // --- Код, который зависит от Webflow и jQuery ---
     const Webflow = window.Webflow || [];
     Webflow.push(function () {
@@ -61,26 +81,9 @@
         }, s);
     });
     var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
-        function initSelect2AddressFields() {
-    $(".is-address-autocomplate.w-input:visible").each(function () {
-        // check not already initialized (защита от двойной инициализации)
-        if (!$(this).data("select2")) {
-            $(this).select2({
-                width: "100%",
-                dataAdapter: googleAutocompleteAdapter,
-                placeholder: $(this).attr("select2-placeholder"),
-                escapeMarkup: function (e) { return e; },
-                minimumInputLength: 2,
-                templateResult: formatRepo,
-                templateSelection: formatRepoSelection,
-            }).on("select2:select", function (e) {
-                var placeId = e.params.data.id;
-                getDetails(placeId, this);
-            });
-        }
-    });
-}
-        initSelect2AddressFields();
+    
+    initSelect2AddressFields();
+        
     $('.is-form-button').on('click', function(){
         setTimeout(initSelect2AddressFields, 250);
     });
