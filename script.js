@@ -80,6 +80,7 @@
         }
     });
 }
+        initSelect2AddressFields();
     $('.is-form-button').on('click', function(){
         setTimeout(initSelect2AddressFields, 250);
     });
