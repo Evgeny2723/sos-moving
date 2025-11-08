@@ -62,7 +62,7 @@
     });
     var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
         function initSelect2AddressFields() {
-                $(".is-address-autocomplate.w-input").each(function () {
+                $(".is-address-autocomplate.w-input:visible").each(function () {
                     // check not already initialized (защита от двойной инициализации)
                     if (!$(this).data("select2")) {
                         $(this).select2({
