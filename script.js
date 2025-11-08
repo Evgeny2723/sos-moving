@@ -8,7 +8,7 @@
     
     allContactForms.forEach(form => {
         // 2. Внутри КАЖДОЙ формы ищем ЕЕ email-поле и ЕЕ кнопку
-        const emailField = form.querySelector('[name="field_e_mail"]');
+        const emailField = form.querySelector('.is-email');
         
         // 3. УБЕДИТЕСЬ, ЧТО У КНОПКИ ЕСТЬ КЛАСС "is-form-button" (НЕ ID!)
         const nextButton = form.querySelector('.is-form-button'); // Ищем по КЛАССУ
