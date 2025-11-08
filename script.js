@@ -10,8 +10,8 @@
         // 2. Внутри КАЖДОЙ формы ищем ЕЕ email-поле и ЕЕ кнопку
         const emailField = form.querySelector('[name="field_e_mail"]');
         
-        // 3. УБЕДИТЕСЬ, ЧТО У КНОПКИ ЕСТЬ КЛАСС "next-step-btn" (НЕ ID!)
-        const nextButton = form.querySelector('.next-step-btn'); // Ищем по КЛАССУ
+        // 3. УБЕДИТЕСЬ, ЧТО У КНОПКИ ЕСТЬ КЛАСС "is-form-button" (НЕ ID!)
+        const nextButton = form.querySelector('.is-form-button'); // Ищем по КЛАССУ
     
         // 4. Если мы нашли и поле, и кнопку в этой форме, вешаем логику
         if (emailField && nextButton) {
