@@ -96,7 +96,7 @@
 }
         Webflow.push(function() {
     initSelect2AddressFields();
-    $('.your-next-step-button').on('click', function(){
+    $('.is-form-button').on('click', function(){
         setTimeout(initSelect2AddressFields, 250);
     });
 });
