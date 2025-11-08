@@ -305,12 +305,13 @@ function getDetails(placeId, element) {
                 // Проверяем, есть ли у нас почтовый индекс
                 let zip = a.postal_code ? a.postal_code : "00000";
 
-                // Заполняем поле с ZIP-кодом
+                // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+                // 'case' теперь соответствует вашим name="moving_from_zip" и name="moving_to_zip"
                 switch (element.getAttribute("name")) {
-                    case "thoroughfare_from":
+                    case "moving_from_zip":
                         document.querySelector('[name="moving_from_zip"]').value = zip;
                         break;
-                    case "thoroughfare_to":
+                    case "moving_to_zip":
                         document.querySelector('[name="moving_to_zip"]').value = zip;
                         break;
                 }
