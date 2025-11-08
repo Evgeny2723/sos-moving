@@ -30,61 +30,47 @@
     const Webflow = window.Webflow || [];
     Webflow.push(function () {
 
-        // --- ПРИОРИТЕТ 3: Инициализация datepicker и select2 для полей формы ---
+    // --- ПРИОРИТЕТ 3: Инициализация datepicker и select2 для полей формы ---
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
     $(".is-date").datepicker({ zIndex: 1e3, autoHide: true, startDate: strDate, format: "yyyy-mm-dd" });
     $(".is-select").select2({ minimumResultsForSearch: -1, dropdownCssClass: "select-dropdown" });
 
-    // --- ПРИОРИТЕТ 4: Код для Google Autocomplete (Поля адресов, новый API) ---
-$.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (ArrayAdapter, Utils) {
-    function GoogleAdapter ($element, options) {
-        GoogleAdapter.__super__.constructor.call(this, $element, options);
-    }
-    Utils.Extend(GoogleAdapter, ArrayAdapter);
-
-    GoogleAdapter.prototype.query = function (params, callback) {
-        var autocomplete = new google.maps.places.AutocompleteSuggestion();
-        if (params.term && params.term.length >= 2) {
-            autocomplete.getQueryPredictions(
-                { input: params.term },
-                function(predictions, status) {
-                    console.log("ОТВЕТ ОТ GOOGLE API:", status, predictions);
-                    var results = [];
-                    if (status === "OK" && predictions && predictions.length) {
-                        for (var i = 0; i < predictions.length; i++) {
-                            results.push({
-                                id: predictions[i].place_id || predictions[i].predictionId,
-                                text: predictions[i].description
-                            });
-                        }
-                    }
-                    results.push({ id: " ", text: "Powered by Google", disabled: true });
-                    callback({ results: results });
-                }
-            );
-        } else {
-            callback({ results: [{ id: " ", text: "Powered by Google", disabled: true }] });
-        }
-    };
-    return GoogleAdapter;
-});
-
-var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
-var $select = $(".is-address-autocomplate");
-$select.each(function () {
-    $(this).select2({
-        width: "100%",
-        dataAdapter: googleAutocompleteAdapter,
-        placeholder: $(this).attr("select2-placeholder"),
-        escapeMarkup: function (e) { return e; },
-        minimumInputLength: 2,
-        templateResult: formatRepo,
-        templateSelection: formatRepoSelection,
-    }).on("select2:select", function (e) {
-        getDetails($(e.currentTarget).find("option:selected").val(), e.currentTarget);
+    // --- ПРИОРИТЕТ 4: Код для Google Autocomplete (поля адресов) ---
+    $.fn.select2.amd.define("select2/data/googleAutocompleteAdapter", ["select2/data/array", "select2/utils"], function (e, t) {
+        function s(e, t) { s.__super__.constructor.call(this, e, t); }
+        return (t.Extend(s, e), s.prototype.query = function (e, t) {
+            var s = function (e, s) {
+                console.log("ОТВЕТ ОТ GOOGLE API:", s); // Оставляем для отладки
+                var a = { results: [] };
+                if (s != google.maps.places.PlacesServiceStatus.OK && t(a), e.length)
+                    for (var i = 0; i < e.length; i++) a.results.push({ id: e[i].place_id.toString(), text: e[i].description.toString() });
+                a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a);
+            };
+            if (e.term && "" != e.term) new google.maps.places.AutocompleteService().getPlacePredictions({ input: e.term }, s);
+            else { var a = { results: [] }; a.results.push({ id: " ", text: "Powered by Google", disabled: true }), t(a); }
+        }, s);
     });
-});
-
+    var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
+    var $select = $(".is-address-autocomplate");
+    $select.each(function () {
+        $(this).select2({
+            width: "100%", dataAdapter: googleAutocompleteAdapter, placeholder: $(this).attr("select2-placeholder"),
+            escapeMarkup: function (e) { return e; },
+            minimumInputLength: 2, templateResult: formatRepo, templateSelection: formatRepoSelection,
+        }); // <-- Убрана ; или , (синтаксическая ошибка)
+    
+        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        // Мы привязываем обработчик 'select2:select' отдельно
+        // и используем e.params.data.id для получения placeId
+        $(this).on("select2:select", function (e) {
+            // Правильный способ получить placeId из select2
+            var placeId = e.params.data.id; 
+            
+            // 'this' - это оригинальный <input> или <select>
+            getDetails(placeId, this);      
+        });
+    });
+        
     // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
     var forms = document.querySelectorAll("form");
     forms.length && forms.forEach((e) => { e.setAttribute("novalidate", ""); });
@@ -304,18 +290,41 @@ function openDropdown(e) { let t = e.find(".dropdown-content-wrapper"); t.css({ 
 function closeDropdown(e) { e.find(".dropdown-content-wrapper").css({ height: 0, opacity: 0 }), e.removeClass("is--open"); }
 function formatRepo(e) { return e.loading ? e.text : "<div class='select2-result-repository clearfix'><div class='select2-result-title'>" + e.text + "</div>"; }
 function formatRepoSelection(e) { return e.text; }
-function getDetails(e, t) {
-    new google.maps.Geocoder().geocode({ placeId: e }, function (e, s) {
-        if ("OK" === s) {
-            if (e[0]) {
-                let a = extractComponents(e[0]);
-                switch (t.getAttribute("name")) {
-                    case "thoroughfare_from": document.querySelector('[name="moving_from_zip"]').value = a.postal_code ? a.postal_code : "00000"; break;
-                    case "thoroughfare_to": document.querySelector('[name="moving_to_zip"]').value = a.postal_code ? a.postal_code : "00000";
+function getDetails(placeId, element) {
+    // ЗАЩИТА: Проверяем, что placeId - это не " " и не пустой
+    if (!placeId || placeId.trim() === "") {
+        console.warn("getDetails: получен неверный placeId.");
+        return; // Не выполняем запрос
+    }
+
+    (new google.maps.Geocoder()).geocode({ 'placeId': placeId }, function (results, status) {
+        if (status === 'OK') {
+            if (results[0]) {
+                let a = extractComponents(results[0]);
+                
+                // Проверяем, есть ли у нас почтовый индекс
+                let zip = a.postal_code ? a.postal_code : "00000";
+
+                // Заполняем поле с ZIP-кодом
+                switch (element.getAttribute("name")) {
+                    case "thoroughfare_from":
+                        document.querySelector('[name="moving_from_zip"]').value = zip;
+                        break;
+                    case "thoroughfare_to":
+                        document.querySelector('[name="moving_to_zip"]').value = zip;
+                        break;
                 }
-                $(t).find("option:selected").val(a.formatted_address);
-            } else window.alert("No results found");
-        } else window.alert("Geocoder failed due to: " + s);
+                
+                // Эта строка обновляет <option> в select2, чтобы сохранить выбранное значение
+                $(element).find("option:selected").val(a.formatted_address);
+                
+            } else {
+                window.alert("No results found");
+            }
+        } else {
+            // Теперь мы увидим реальную ошибку, если она будет
+            window.alert("Geocoder failed due to: " + status); 
+        }
     });
 }
 function extractComponents(e) {
