@@ -84,7 +84,7 @@
     initSelect2AddressFields();
         
     $('.is-form-button').on('click', function(){
-        setTimeout(initSelect2AddressFields, 500);
+        setTimeout(initSelect2AddressFields, 1000);
     });
         
     // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
