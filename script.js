@@ -36,6 +36,13 @@
     // --- ПРИОРИТЕТ 2: Инициализация маски для телефонных полей ---
     addInputPhoneMask();
 
+            Webflow.push(function() {
+    initSelect2AddressFields();
+    $('.is-form-button').on('click', function(){
+        setTimeout(initSelect2AddressFields, 250);
+    });
+});
+
     // --- Код, который зависит от Webflow и jQuery ---
     const Webflow = window.Webflow || [];
     Webflow.push(function () {
@@ -61,20 +68,6 @@
         }, s);
     });
     var googleAutocompleteAdapter = $.fn.select2.amd.require("select2/data/googleAutocompleteAdapter");
-    var $select = $(".is-address-autocomplate.w-input:visible").each(function () {
-    $(this).select2({
-        width: "100%",
-        dataAdapter: googleAutocompleteAdapter,
-        placeholder: $(this).attr("select2-placeholder"),
-        escapeMarkup: function (e) { return e; },
-        minimumInputLength: 2,
-        templateResult: formatRepo,
-        templateSelection: formatRepoSelection,
-    }).on("select2:select", function (e) {
-        var placeId = e.params.data.id;
-        getDetails(placeId, this);
-    });
-});
         function initSelect2AddressFields() {
     $(".is-address-autocomplate.w-input:visible").each(function () {
         // check not already initialized (защита от двойной инициализации)
@@ -94,12 +87,6 @@
         }
     });
 }
-        Webflow.push(function() {
-    initSelect2AddressFields();
-    $('.is-form-button').on('click', function(){
-        setTimeout(initSelect2AddressFields, 250);
-    });
-});
         
     // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
     var forms = document.querySelectorAll("form");
