@@ -291,39 +291,46 @@ function closeDropdown(e) { e.find(".dropdown-content-wrapper").css({ height: 0,
 function formatRepo(e) { return e.loading ? e.text : "<div class='select2-result-repository clearfix'><div class='select2-result-title'>" + e.text + "</div>"; }
 function formatRepoSelection(e) { return e.text; }
 function getDetails(placeId, element) {
-    // ЗАЩИТА: Проверяем, что placeId - это не " " и не пустой
+    // 1. ЗАЩИТА: Проверяем, что к нам пришел настоящий ID, а не " " или пустая строка
     if (!placeId || placeId.trim() === "") {
-        console.warn("getDetails: получен неверный placeId.");
-        return; // Не выполняем запрос
+        console.warn("getDetails: получен неверный placeId, запрос не выполнен.");
+        return; // Останавливаем функцию
     }
 
     (new google.maps.Geocoder()).geocode({ 'placeId': placeId }, function (results, status) {
         if (status === 'OK') {
             if (results[0]) {
-                let a = extractComponents(results[0]);
-                
-                // Проверяем, есть ли у нас почтовый индекс
-                let zip = a.postal_code ? a.postal_code : "00000";
+                // 2. ИЗВЛЕКАЕМ ДАННЫЕ
+                let a = extractComponents(results[0]); // Ваша функция extractComponents
+                let zip = a.postal_code ? a.postal_code : "00000"; // Получаем ZIP
+                let fullAddress = a.formatted_address; // Получаем полный адрес
+                let $element = $(element);
 
-                // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-                // 'case' теперь соответствует вашим name="moving_from_zip" и name="moving_to_zip"
-                switch (element.getAttribute("name")) {
-                    case "moving_from_zip":
-                        document.querySelector('[name="moving_from_zip"]').value = zip;
-                        break;
-                    case "moving_to_zip":
-                        document.querySelector('[name="moving_to_zip"]').value = zip;
-                        break;
-                }
+                // 3. ОБНОВЛЯЕМ SELECT2 (ГЛАВНОЕ ИСПРАВЛЕНИЕ)
                 
-                // Эта строка обновляет <option> в select2, чтобы сохранить выбранное значение
-                $(element).find("option:selected").val(a.formatted_address);
+                // Создаем новый, *правильный* <option>
+                // new Option(Text, Value, defaultSelected, Selected)
+                // Text = что видит пользователь (полный адрес)
+                // Value = что уйдет на сервер (ZIP-код)
+                var newOption = new Option(fullAddress, zip, true, true);
+
+                // 4. ОЧИЩАЕМ ПОЛЕ
+                // Удаляем все старые <option> (тот самый "непонятный список")
+                $element.empty(); 
                 
+                // 5. ВСТАВЛЯЕМ НОВЫЙ OPTION
+                // Добавляем наш новый, единственный и правильный <option>
+                $element.append(newOption);
+                
+                // 6. ОБНОВЛЯЕМ SELECT2
+                // Говорим select2, чтобы он перечитал <input> и обновил свой внешний вид
+                $element.trigger('change'); 
+
             } else {
-                window.alert("No results found");
+                window.alert("Geocoder: No results found");
             }
         } else {
-            // Теперь мы увидим реальную ошибку, если она будет
+            // Если что-то пошло не так, мы увидим ошибку
             window.alert("Geocoder failed due to: " + status); 
         }
     });
