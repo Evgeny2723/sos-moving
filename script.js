@@ -1,27 +1,37 @@
     // --- ПРИОРИТЕТ 1: Код для Multistep Form (валидация email) ---
-    const emailField = document.querySelector('[name="field_e_mail"]') || document.getElementById('field_e_mail');
-    const nextButton = document.querySelector('#next-step-btn');
-
-    function isValidEmail(email) {
+        function isValidEmail(email) {
         return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
     }
-
-    function toggleNextButton() {
-        if (!isValidEmail(emailField.value)) {
-            nextButton.style.opacity = '0.5';
-            nextButton.style.pointerEvents = 'none';
-            emailField.classList.add('is-error');
-        } else {
-            nextButton.style.opacity = '1';
-            nextButton.style.pointerEvents = 'auto';
-            emailField.classList.remove('is-error');
+    
+    // 1. Находим ВСЕ формы
+    const allContactForms = document.querySelectorAll('form'); 
+    
+    allContactForms.forEach(form => {
+        // 2. Внутри КАЖДОЙ формы ищем ЕЕ email-поле и ЕЕ кнопку
+        const emailField = form.querySelector('[name="field_e_mail"]');
+        
+        // 3. УБЕДИТЕСЬ, ЧТО У КНОПКИ ЕСТЬ КЛАСС "next-step-btn" (НЕ ID!)
+        const nextButton = form.querySelector('.next-step-btn'); // Ищем по КЛАССУ
+    
+        // 4. Если мы нашли и поле, и кнопку в этой форме, вешаем логику
+        if (emailField && nextButton) {
+            
+            const toggleThisButton = () => {
+                if (!isValidEmail(emailField.value)) {
+                    nextButton.style.opacity = '0.5';
+                    nextButton.style.pointerEvents = 'none';
+                    emailField.classList.add('is-error');
+                } else {
+                    nextButton.style.opacity = '1';
+                    nextButton.style.pointerEvents = 'auto';
+                    emailField.classList.remove('is-error');
+                }
+            };
+    
+            toggleThisButton(); // Проверяем при загрузке
+            emailField.addEventListener('input', toggleThisButton); // и при вводе
         }
-    }
-
-    if (emailField && nextButton) {
-        toggleNextButton();
-        emailField.addEventListener('input', toggleNextButton);
-    }
+    });
 
     // --- ПРИОРИТЕТ 2: Инициализация маски для телефонных полей ---
     addInputPhoneMask();
@@ -83,11 +93,20 @@
     }),
     $(".bottom-cta-wrapper form").length && ($(".services-hero-section form").length ? $(".bottom-cta-wrapper form").attr("redirect", $(".services-hero-section form").attr("redirect")) : $(".bottom-cta-wrapper form").attr("redirect", "/confirmation-page")));
     
-    $("form").on("submit", function () {
+    
+    // --- ИСПРАВЛЕНИЯ В SUBMIT ---
+    $("form").on("submit", function (evt) { // Добавлен 'evt'
+        
+        // --- ИСПРАВЛЕНИЕ 1: Отключаем нативную отправку Webflow ---
+        evt.preventDefault(); 
+        
         var e = $(this), s = e.attr("data-api-redirect"), a = e.find('[type="submit"]'), i = a.val();
         if (e.hasClass("referer-form")) return;
+        
         a.val(a.data("wait"));
-        var t = { data: formToObj(e) };
+        
+        var t = { data: formToObj(e) }; // formToObj(e) теперь получит правильный ZIP
+        
         var o = new Date();
         var r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
         t.data.provider_id = 50;
@@ -104,14 +123,46 @@
         }
         t = JSON.stringify(t);
         console.log("Отправляемые данные:", t);
-        var l = $(this).siblings(".w-form-fail");
+        
+        var l = $(this).siblings(".w-form-fail"); // Наш блок для ошибок
+        var successBlock = $(this).siblings(".w-form-done"); // Блок успеха
+        
         $.ajax({
             url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
             type: "POST", dataType: "text", data: t, contentType: "application/json",
-            statusCode: { 400: function (e) { var t = JSON.parse(e); l.html(t.status_message), l.show(), a.val(i); } },
-            success: function (e) { var t = JSON.parse(e); t.status ? (window.location = s) : (l.html(t.status_message), l.show()), a.val(i); },
-            error: function (e, t, s) { l.html(t.status_message), l.show(), a.val(i); },
+            statusCode: { 
+                400: function (e) { 
+                    var t = JSON.parse(e); 
+                    l.html(t.status_message);
+                    l.show(); // Показываем ошибку в w-form-fail
+                    successBlock.hide(); // Прячем блок успеха
+                    a.val(i); 
+                } 
+            },
+            success: function (e) { 
+                var t = JSON.parse(e); 
+                if (t.status) {
+                    // Успех CRM: редирект
+                    window.location = s;
+                } else {
+                    // --- ИСПРАВЛЕНИЕ 2: Обработка ошибки от CRM ---
+                    // CRM вернула ошибку, НЕ отправляем форму в Webflow
+                    l.html(t.status_message);
+                    l.show(); // Показываем ошибку в w-form-fail
+                    successBlock.hide(); // Прячем блок успеха
+                    a.val(i);
+                }
+            },
+            error: function (e, t, s) { 
+                l.html(t.status_message);
+                l.show(); // Показываем ошибку в w-form-fail
+                successBlock.hide(); // Прячем блок успеха
+                a.val(i); 
+            },
         });
+        
+        // --- ИСПРАВЛЕНИЕ 3: Предотвращаем двойную отправку ---
+        return false;
     });
         
         // --- ПРИОРИТЕТ 6: Код для Slick Slider (свайпер) ---
@@ -291,46 +342,36 @@ function closeDropdown(e) { e.find(".dropdown-content-wrapper").css({ height: 0,
 function formatRepo(e) { return e.loading ? e.text : "<div class='select2-result-repository clearfix'><div class='select2-result-title'>" + e.text + "</div>"; }
 function formatRepoSelection(e) { return e.text; }
 function getDetails(placeId, element) {
-    // 1. ЗАЩИТА: Проверяем, что к нам пришел настоящий ID, а не " " или пустая строка
     if (!placeId || placeId.trim() === "") {
         console.warn("getDetails: получен неверный placeId, запрос не выполнен.");
-        return; // Останавливаем функцию
+        return; 
     }
 
     (new google.maps.Geocoder()).geocode({ 'placeId': placeId }, function (results, status) {
         if (status === 'OK') {
             if (results[0]) {
-                // 2. ИЗВЛЕКАЕМ ДАННЫЕ
-                let a = extractComponents(results[0]); // Ваша функция extractComponents
-                let zip = a.postal_code ? a.postal_code : "00000"; // Получаем ZIP
-                let fullAddress = a.formatted_address; // Получаем полный адрес
+                let a = extractComponents(results[0]); 
+                let zip = a.postal_code ? a.postal_code : "00000"; 
+                let fullAddress = a.formatted_address; 
                 let $element = $(element);
 
-                // 3. ОБНОВЛЯЕМ SELECT2 (ГЛАВНОЕ ИСПРАВЛЕНИЕ)
-                
-                // Создаем новый, *правильный* <option>
-                // new Option(Text, Value, defaultSelected, Selected)
                 // Text = что видит пользователь (полный адрес)
                 // Value = что уйдет на сервер (ZIP-код)
                 var newOption = new Option(fullAddress, zip, true, true);
 
-                // 4. ОЧИЩАЕМ ПОЛЕ
-                // Удаляем все старые <option> (тот самый "непонятный список")
                 $element.empty(); 
-                
-                // 5. ВСТАВЛЯЕМ НОВЫЙ OPTION
-                // Добавляем наш новый, единственный и правильный <option>
                 $element.append(newOption);
                 
-                // 6. ОБНОВЛЯЕМ SELECT2
-                // Говорим select2, чтобы он перечитал <input> и обновил свой внешний вид
+                // --- ИСПРАВЛЕНИЕ 3: Принудительно устанавливаем .val() ---
+                // Это гарантирует, что formToObj() получит ZIP-код
+                $element.val(zip); 
+                
                 $element.trigger('change'); 
 
             } else {
                 window.alert("Geocoder: No results found");
             }
         } else {
-            // Если что-то пошло не так, мы увидим ошибку
             window.alert("Geocoder failed due to: " + status); 
         }
     });
