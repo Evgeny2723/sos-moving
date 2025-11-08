@@ -36,13 +36,6 @@
     // --- ПРИОРИТЕТ 2: Инициализация маски для телефонных полей ---
     addInputPhoneMask();
 
-            Webflow.push(function() {
-    initSelect2AddressFields();
-    $('.is-form-button').on('click', function(){
-        setTimeout(initSelect2AddressFields, 250);
-    });
-});
-
     // --- Код, который зависит от Webflow и jQuery ---
     const Webflow = window.Webflow || [];
     Webflow.push(function () {
@@ -87,6 +80,9 @@
         }
     });
 }
+    $('.is-form-button').on('click', function(){
+        setTimeout(initSelect2AddressFields, 250);
+    });
         
     // --- ПРИОРИТЕТ 5: Код для обработки форм (валидация, отправка) ---
     var forms = document.querySelectorAll("form");
