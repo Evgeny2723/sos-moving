@@ -39,6 +39,11 @@
     // --- Код, который зависит от Webflow и jQuery ---
     const Webflow = window.Webflow || [];
     Webflow.push(function () {
+        const $pagePathField = $('#page_path');
+        if ($pagePathField.length) {
+            $pagePathField.val(window.location.href);
+            console.log("Путь страницы записан в поле:", window.location.href);
+        }
 
     // --- ПРИОРИТЕТ 3: Инициализация datepicker и select2 для полей формы ---
     let d = new Date(), strDate = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
