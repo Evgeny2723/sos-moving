@@ -131,73 +131,39 @@
     var formData = formToObj($form);
     
     // =====================================================================
-    // 4. ФРОНТЕНД-ВАЛИДАЦИЯ перед отправкой
+    // 4. ЗАГЛУШКИ для всех полей — форма отправляется ВСЕГДА
     // =====================================================================
-    var validationErrors = [];
-    
-    if (!formData.field_first_name || formData.field_first_name === "n/a") {
-        validationErrors.push("Please enter your name.");
-    }
-    if (!formData.field_e_mail || formData.field_e_mail === "n/a") {
-        validationErrors.push("Please enter your email.");
-    }
+
+    if (!formData.field_first_name) formData.field_first_name = "n/a";
+    if (!formData.field_e_mail) formData.field_e_mail = "callback@sosmovingla.net";
+
     var phoneDigits = (formData.field_phone || "").replace(/\D/g, '');
-    if (!formData.field_phone || formData.field_phone === "n/a" || phoneDigits.length < 9 || phoneDigits.length > 11) {
-        validationErrors.push("Please enter a valid phone number.");
+    if (!formData.field_phone || phoneDigits.length < 9) formData.field_phone = "0000000000";
+
+    if (!formData.move_size) formData.move_size = 0;
+    if (!formData.moving_from_zip) formData.moving_from_zip = "00000";
+    if (!formData.moving_to_zip) formData.moving_to_zip = "00000";
+    if (!formData.company_name) formData.company_name = "n/a";
+    formData.field_last_name = formData.field_last_name || "n/a";
+    if (!formData.page_path) formData.page_path = window.location.href;
+
+    if (!formData.field_date) {
+        var now = new Date();
+        formData.field_date = now.getFullYear() + "-" +
+            ("0" + (now.getMonth() + 1)).slice(-2) + "-" +
+            ("0" + now.getDate()).slice(-2);
     }
-    
-    // move_size: "0" или отсутствует — форма на втором шаге, поле может быть пустым
-    // Не блокируем отправку, но логируем
-    if (!formData.move_size || formData.move_size === "0" || formData.move_size === 0) {
-        console.warn("[SOS Form] move_size не выбран, будет отправлено как 0");
-        // Раскомментируй если хочешь блокировать отправку без move_size:
-        // validationErrors.push("Please select a moving size.");
-    }
-    
-    if (validationErrors.length > 0) {
-        $failBlock.html('<div style="padding: 10px;">' + validationErrors.join('<br>') + '</div>');
-        $failBlock.show();
-        $successBlock.hide();
-        return false;
-    }
-    
+
     // 5. Ставим флаг отправки и меняем состояние кнопки
     $form.data("is-submitting", true);
     $submitBtn.val($submitBtn.data("wait") || "Sending...");
     $submitBtn.prop("disabled", true);
     $failBlock.hide();
     $successBlock.hide();
-    
-    // 6. Заполняем обязательные поля и дефолты
+
+    // 6. Формируем payload
     var payload = { data: formData };
-    var now = new Date();
-    var todayStr = now.getFullYear() + "-" + 
-                   ("0" + (now.getMonth() + 1)).slice(-2) + "-" + 
-                   ("0" + now.getDate()).slice(-2);
-    
     payload.data.provider_id = 50;
-    payload.data.field_last_name = payload.data.field_last_name || "n/a";
-    if (!payload.data.field_date) { 
-        payload.data.field_date = todayStr; 
-    }
-    
-    // Заполняем пустые поля дефолтами
-    for (var key in payload.data) {
-        if (payload.data[key] === null || payload.data[key] === "") {
-            switch (key) {
-                case "moving_from_zip":
-                case "moving_to_zip":
-                    payload.data[key] = "00000";
-                    break;
-                case "move_size":
-                    payload.data[key] = 0;
-                    break;
-                default:
-                    payload.data[key] = "n/a";
-            }
-        }
-    }
-    
     var jsonPayload = JSON.stringify(payload);
     console.log("[SOS Form] Отправка:", JSON.parse(jsonPayload));
     
