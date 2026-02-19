@@ -106,75 +106,236 @@
     
     
     // --- ИСПРАВЛЕНИЯ В SUBMIT ---
-    $("form").on("submit", function (evt) { // Добавлен 'evt'
-        
-        // --- ИСПРАВЛЕНИЕ 1: Отключаем нативную отправку Webflow ---
-        evt.preventDefault(); 
-        
-        var e = $(this), s = e.attr("data-api-redirect"), a = e.find('[type="submit"]'), i = a.val();
-        if (e.hasClass("referer-form")) return;
-        
-        a.val(a.data("wait"));
-        
-        var t = { data: formToObj(e) }; // formToObj(e) теперь получит правильный ZIP
-        
-        var o = new Date();
-        var r = o.getFullYear() + "-" + ("0" + (o.getMonth() + 1)).slice(-2) + "-" + ("0" + o.getDate()).slice(-2);
-        t.data.provider_id = 50;
-        t.data.field_last_name = "n/a";
-        if (!t.data.field_date) { t.data.field_date = r; }
-        for (const key in t.data) {
-            if (t.data[key] === null || t.data[key] === "") {
-                switch (key) {
-                    case "moving_from_zip": case "moving_to_zip": t.data[key] = "00000"; break;
-                    case "move_size": t.data[key] = 0; break;
-                    default: t.data[key] = "n/a";
-                }
+    $("form").on("submit", function (evt) {
+    
+    // 1. Блокируем нативную отправку Webflow
+    evt.preventDefault();
+    
+    var $form = $(this);
+    var redirectUrl = $form.attr("data-api-redirect");
+    var $submitBtn = $form.find('[type="submit"]');
+    var originalBtnText = $submitBtn.val();
+    var $failBlock = $form.siblings(".w-form-fail");
+    var $successBlock = $form.siblings(".w-form-done");
+    
+    // Пропускаем referer-формы
+    if ($form.hasClass("referer-form")) return;
+    
+    // 2. Защита от двойной отправки
+    if ($form.data("submitting")) {
+        console.warn("[SOS Form] Форма уже отправляется, игнорируем повторный клик");
+        return false;
+    }
+    $form.data("submitting", true);
+    
+    // 3. Показываем состояние загрузки
+    $submitBtn.val($submitBtn.data("wait") || "Sending...");
+    $submitBtn.prop("disabled", true);
+    $failBlock.hide();
+    $successBlock.hide();
+    
+    // 4. Собираем данные формы
+    var payload = { data: formToObj($form) };
+    
+    // 5. Заполняем обязательные поля и дефолты
+    var now = new Date();
+    var todayStr = now.getFullYear() + "-" + 
+                   ("0" + (now.getMonth() + 1)).slice(-2) + "-" + 
+                   ("0" + now.getDate()).slice(-2);
+    
+    payload.data.provider_id = 50;
+    payload.data.field_last_name = payload.data.field_last_name || "n/a";
+    
+    if (!payload.data.field_date) {
+        payload.data.field_date = todayStr;
+    }
+    
+    // Заполняем пустые поля дефолтными значениями
+    for (var key in payload.data) {
+        if (payload.data[key] === null || payload.data[key] === "") {
+            switch (key) {
+                case "moving_from_zip":
+                case "moving_to_zip":
+                    payload.data[key] = "00000";
+                    break;
+                case "move_size":
+                    payload.data[key] = 0;
+                    break;
+                default:
+                    payload.data[key] = "n/a";
             }
         }
-        t = JSON.stringify(t);
-        console.log("Отправляемые данные:", t);
+    }
+    
+    var jsonPayload = JSON.stringify(payload);
+    
+    // 6. ПОДРОБНОЕ ЛОГИРОВАНИЕ — поможет при отладке
+    console.group("[SOS Form] Отправка формы");
+    console.log("URL:", "https://api.sosmovingla.net/server/parser/get_lead_parsing");
+    console.log("Redirect URL:", redirectUrl);
+    console.log("Payload:", JSON.parse(jsonPayload)); // Красивый вывод
+    console.log("Raw JSON:", jsonPayload);
+    console.groupEnd();
+    
+    // =========================================================================
+    // 7. ФУНКЦИЯ ПОКАЗА ОШИБКИ — единая точка для всех ошибок
+    // =========================================================================
+    function showError(message, debugInfo) {
+        console.error("[SOS Form] ОШИБКА:", message, debugInfo || "");
         
-        var l = $(this).siblings(".w-form-fail"); // Наш блок для ошибок
-        var successBlock = $(this).siblings(".w-form-done"); // Блок успеха
+        // Формируем понятное сообщение для пользователя
+        var userMessage = message || "Something went wrong. Please try again or call us at 909-443-0004.";
         
-        $.ajax({
-            url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
-            type: "POST", dataType: "text", data: t, contentType: "application/json",
-            statusCode: { 
-                400: function (e) { 
-                    var t = JSON.parse(e); 
-                    l.html(t.status_message);
-                    l.show(); // Показываем ошибку в w-form-fail
-                    successBlock.hide(); // Прячем блок успеха
-                    a.val(i); 
-                } 
-            },
-            success: function (e) { 
-                var t = JSON.parse(e); 
-                if (t.status) {
-                    // Успех CRM: редирект
-                    window.location = s;
+        $failBlock.html('<div style="padding: 10px;">' + userMessage + '</div>');
+        $failBlock.show();
+        $successBlock.hide();
+        
+        // Скроллим к ошибке, чтобы пользователь точно увидел
+        if ($failBlock.length && $failBlock.is(":visible")) {
+            $("html, body").animate({
+                scrollTop: $failBlock.offset().top - 100
+            }, 300);
+        }
+        
+        // Восстанавливаем кнопку
+        resetButton();
+    }
+    
+    // =========================================================================
+    // 8. ФУНКЦИЯ СБРОСА КНОПКИ
+    // =========================================================================
+    function resetButton() {
+        $submitBtn.val(originalBtnText);
+        $submitBtn.prop("disabled", false);
+        $form.data("submitting", false);
+    }
+    
+    // =========================================================================
+    // 9. AJAX ЗАПРОС С ПОЛНОЙ ОБРАБОТКОЙ ОШИБОК
+    // =========================================================================
+    $.ajax({
+        url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
+        type: "POST",
+        dataType: "text",
+        data: jsonPayload,
+        contentType: "application/json",
+        timeout: 15000, // 15 секунд таймаут
+        
+        // -----------------------------------------------------------------
+        // УСПЕШНЫЙ HTTP ОТВЕТ (200-299)
+        // -----------------------------------------------------------------
+        success: function (responseText, textStatus, xhr) {
+            console.log("[SOS Form] HTTP Status:", xhr.status);
+            console.log("[SOS Form] Raw Response:", responseText);
+            
+            // Пытаемся распарсить JSON
+            var response;
+            try {
+                response = JSON.parse(responseText);
+            } catch (parseError) {
+                // Сервер вернул не-JSON ответ
+                showError(
+                    "Server returned an unexpected response. Please try again or call us at 909-443-0004.",
+                    { parseError: parseError.message, responseText: responseText }
+                );
+                return;
+            }
+            
+            console.log("[SOS Form] Parsed Response:", response);
+            
+            // Проверяем статус от CRM
+            if (response.status === true || response.status === "true") {
+                // ✅ УСПЕХ — лид принят CRM
+                console.log("[SOS Form] ✅ Лид успешно отправлен в CRM!");
+                
+                resetButton();
+                
+                // Редирект на страницу подтверждения
+                if (redirectUrl) {
+                    window.location = redirectUrl;
                 } else {
-                    // --- ИСПРАВЛЕНИЕ 2: Обработка ошибки от CRM ---
-                    // CRM вернула ошибку, НЕ отправляем форму в Webflow
-                    l.html(t.status_message);
-                    l.show(); // Показываем ошибку в w-form-fail
-                    successBlock.hide(); // Прячем блок успеха
-                    a.val(i);
+                    // Если нет redirect URL — показываем success block
+                    $successBlock.show();
+                    $failBlock.hide();
+                    $form.hide();
                 }
-            },
-            error: function (e, t, s) { 
-                l.html(t.status_message);
-                l.show(); // Показываем ошибку в w-form-fail
-                successBlock.hide(); // Прячем блок успеха
-                a.val(i); 
-            },
-        });
+                
+            } else {
+                // ❌ CRM ВЕРНУЛА ОШИБКУ
+                var crmErrorMsg = response.status_message || 
+                                  response.message || 
+                                  response.error ||
+                                  "Your request could not be processed. Please try again or call us at 909-443-0004.";
+                
+                showError(crmErrorMsg, { fullResponse: response });
+            }
+        },
         
-        // --- ИСПРАВЛЕНИЕ 3: Предотвращаем двойную отправку ---
-        return false;
+        // -----------------------------------------------------------------
+        // HTTP ОШИБКА (400, 500, timeout, network error)
+        // -----------------------------------------------------------------
+        error: function (xhr, textStatus, errorThrown) {
+            console.error("[SOS Form] AJAX Error Details:");
+            console.error("  textStatus:", textStatus);
+            console.error("  errorThrown:", errorThrown);
+            console.error("  HTTP Status:", xhr.status);
+            console.error("  Response Text:", xhr.responseText);
+            
+            var errorMessage;
+            
+            // Определяем тип ошибки для пользователя
+            switch (textStatus) {
+                case "timeout":
+                    errorMessage = "The server is taking too long to respond. Please try again in a moment.";
+                    break;
+                    
+                case "abort":
+                    errorMessage = "The request was cancelled. Please try again.";
+                    break;
+                    
+                case "parsererror":
+                    errorMessage = "Server returned an unexpected response. Please try again.";
+                    break;
+                    
+                default:
+                    // Пробуем достать сообщение из тела ответа
+                    if (xhr.responseText) {
+                        try {
+                            var errorResp = JSON.parse(xhr.responseText);
+                            errorMessage = errorResp.status_message || 
+                                          errorResp.message || 
+                                          errorResp.error;
+                        } catch (e) {
+                            // Ответ не JSON
+                        }
+                    }
+                    
+                    if (!errorMessage) {
+                        if (xhr.status === 0) {
+                            errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
+                        } else if (xhr.status === 400) {
+                            errorMessage = "Invalid form data. Please check your information and try again.";
+                        } else if (xhr.status === 429) {
+                            errorMessage = "Too many requests. Please wait a moment and try again.";
+                        } else if (xhr.status >= 500) {
+                            errorMessage = "Server error. Please try again later or call us at 909-443-0004.";
+                        } else {
+                            errorMessage = "Something went wrong (Error " + xhr.status + "). Please try again or call us at 909-443-0004.";
+                        }
+                    }
+            }
+            
+            showError(errorMessage, {
+                textStatus: textStatus,
+                errorThrown: errorThrown,
+                httpStatus: xhr.status
+            });
+        }
     });
+    
+    // 10. Предотвращаем стандартное поведение формы
+    return false;
+});
         
         // --- ПРИОРИТЕТ 6: Код для Slick Slider (свайпер) ---
         if ($(".is-have-slider").length) {
