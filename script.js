@@ -445,10 +445,11 @@ function addInputPhoneMask() {
         a = (e) => {
             let a = e.target, i = s(a), o = "", { selectionEnd: r, selectionStart: l } = a;
             if (!i) { a.value = ""; return; }
+            i = i.substring(0, 10); // Ограничиваем 10 цифрами
             a.value.length !== l && e.data && t.test(e.data) && (a.value = i),
             i.length > 0 && (o += `(${i.substring(0, 3)}`), i.length >= 4 && (o += `) ${i.substring(3, 6)}`),
             i.length >= 7 && (o += `-${i.substring(6, 8)}`), i.length >= 9 && (o += `${i.substring(8, 10)}`),
-            i.length >= 11 && (o = `${i.substring(0, 16)}`);
+            i.length >= 11 && (o = `${i.substring(0, 10)}`);
             let n = getNewCaretPosition(i, o);
             a.value = o, a.setSelectionRange(n, n);
         },
