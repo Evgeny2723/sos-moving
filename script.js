@@ -141,7 +141,8 @@
     if (!formData.field_e_mail || formData.field_e_mail === "n/a") {
         validationErrors.push("Please enter your email.");
     }
-    if (!formData.field_phone || formData.field_phone === "n/a" || formData.field_phone.replace(/\D/g, '').length < 10) {
+    var phoneDigits = (formData.field_phone || "").replace(/\D/g, '');
+    if (!formData.field_phone || formData.field_phone === "n/a" || phoneDigits.length < 9 || phoneDigits.length > 11) {
         validationErrors.push("Please enter a valid phone number.");
     }
     
