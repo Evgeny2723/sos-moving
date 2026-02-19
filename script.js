@@ -122,22 +122,53 @@
     if ($form.hasClass("referer-form")) return;
     
     // 2. Защита от двойной отправки
-    if ($form.data("submitting")) {
-        console.warn("[SOS Form] Форма уже отправляется, игнорируем повторный клик");
+    if ($form.data("is-submitting")) {
+        console.warn("[SOS Form] Повторная отправка заблокирована");
         return false;
     }
-    $form.data("submitting", true);
     
-    // 3. Показываем состояние загрузки
+    // 3. Собираем данные формы
+    var formData = formToObj($form);
+    
+    // =====================================================================
+    // 4. ФРОНТЕНД-ВАЛИДАЦИЯ перед отправкой
+    // =====================================================================
+    var validationErrors = [];
+    
+    if (!formData.field_first_name || formData.field_first_name === "n/a") {
+        validationErrors.push("Please enter your name.");
+    }
+    if (!formData.field_e_mail || formData.field_e_mail === "n/a") {
+        validationErrors.push("Please enter your email.");
+    }
+    if (!formData.field_phone || formData.field_phone === "n/a" || formData.field_phone.replace(/\D/g, '').length < 10) {
+        validationErrors.push("Please enter a valid phone number.");
+    }
+    
+    // move_size: "0" или отсутствует — форма на втором шаге, поле может быть пустым
+    // Не блокируем отправку, но логируем
+    if (!formData.move_size || formData.move_size === "0" || formData.move_size === 0) {
+        console.warn("[SOS Form] move_size не выбран, будет отправлено как 0");
+        // Раскомментируй если хочешь блокировать отправку без move_size:
+        // validationErrors.push("Please select a moving size.");
+    }
+    
+    if (validationErrors.length > 0) {
+        $failBlock.html('<div style="padding: 10px;">' + validationErrors.join('<br>') + '</div>');
+        $failBlock.show();
+        $successBlock.hide();
+        return false;
+    }
+    
+    // 5. Ставим флаг отправки и меняем состояние кнопки
+    $form.data("is-submitting", true);
     $submitBtn.val($submitBtn.data("wait") || "Sending...");
     $submitBtn.prop("disabled", true);
     $failBlock.hide();
     $successBlock.hide();
     
-    // 4. Собираем данные формы
-    var payload = { data: formToObj($form) };
-    
-    // 5. Заполняем обязательные поля и дефолты
+    // 6. Заполняем обязательные поля и дефолты
+    var payload = { data: formData };
     var now = new Date();
     var todayStr = now.getFullYear() + "-" + 
                    ("0" + (now.getMonth() + 1)).slice(-2) + "-" + 
@@ -145,12 +176,11 @@
     
     payload.data.provider_id = 50;
     payload.data.field_last_name = payload.data.field_last_name || "n/a";
-    
-    if (!payload.data.field_date) {
-        payload.data.field_date = todayStr;
+    if (!payload.data.field_date) { 
+        payload.data.field_date = todayStr; 
     }
     
-    // Заполняем пустые поля дефолтными значениями
+    // Заполняем пустые поля дефолтами
     for (var key in payload.data) {
         if (payload.data[key] === null || payload.data[key] === "") {
             switch (key) {
@@ -168,172 +198,100 @@
     }
     
     var jsonPayload = JSON.stringify(payload);
+    console.log("[SOS Form] Отправка:", JSON.parse(jsonPayload));
     
-    // 6. ПОДРОБНОЕ ЛОГИРОВАНИЕ — поможет при отладке
-    console.group("[SOS Form] Отправка формы");
-    console.log("URL:", "https://api.sosmovingla.net/server/parser/get_lead_parsing");
-    console.log("Redirect URL:", redirectUrl);
-    console.log("Payload:", JSON.parse(jsonPayload)); // Красивый вывод
-    console.log("Raw JSON:", jsonPayload);
-    console.groupEnd();
-    
-    // =========================================================================
-    // 7. ФУНКЦИЯ ПОКАЗА ОШИБКИ — единая точка для всех ошибок
-    // =========================================================================
-    function showError(message, debugInfo) {
-        console.error("[SOS Form] ОШИБКА:", message, debugInfo || "");
-        
-        // Формируем понятное сообщение для пользователя
-        var userMessage = message || "Something went wrong. Please try again or call us at 909-443-0004.";
-        
+    // =====================================================================
+    // 7. Функции-хелперы
+    // =====================================================================
+    function showError(message) {
+        var userMessage = message || "Something went wrong. Please try again or call us at <a href='tel:+19094430004' style='color: inherit; text-decoration: underline;'>909-443-0004</a>";
         $failBlock.html('<div style="padding: 10px;">' + userMessage + '</div>');
         $failBlock.show();
         $successBlock.hide();
-        
-        // Скроллим к ошибке, чтобы пользователь точно увидел
-        if ($failBlock.length && $failBlock.is(":visible")) {
-            $("html, body").animate({
-                scrollTop: $failBlock.offset().top - 100
-            }, 300);
-        }
-        
-        // Восстанавливаем кнопку
         resetButton();
+        
+        // Скролл к ошибке
+        if ($failBlock.length && $failBlock.offset()) {
+            $("html, body").animate({ scrollTop: $failBlock.offset().top - 100 }, 300);
+        }
     }
     
-    // =========================================================================
-    // 8. ФУНКЦИЯ СБРОСА КНОПКИ
-    // =========================================================================
     function resetButton() {
         $submitBtn.val(originalBtnText);
         $submitBtn.prop("disabled", false);
-        $form.data("submitting", false);
+        $form.data("is-submitting", false);
     }
     
-    // =========================================================================
-    // 9. AJAX ЗАПРОС С ПОЛНОЙ ОБРАБОТКОЙ ОШИБОК
-    // =========================================================================
+    // =====================================================================
+    // 8. AJAX запрос
+    // =====================================================================
     $.ajax({
         url: "https://api.sosmovingla.net/server/parser/get_lead_parsing",
         type: "POST",
         dataType: "text",
         data: jsonPayload,
         contentType: "application/json",
-        timeout: 15000, // 15 секунд таймаут
+        timeout: 30000, // 30 секунд — API иногда отвечает медленно
         
-        // -----------------------------------------------------------------
-        // УСПЕШНЫЙ HTTP ОТВЕТ (200-299)
-        // -----------------------------------------------------------------
         success: function (responseText, textStatus, xhr) {
-            console.log("[SOS Form] HTTP Status:", xhr.status);
-            console.log("[SOS Form] Raw Response:", responseText);
+            console.log("[SOS Form] Response:", responseText);
             
-            // Пытаемся распарсить JSON
             var response;
             try {
                 response = JSON.parse(responseText);
-            } catch (parseError) {
-                // Сервер вернул не-JSON ответ
-                showError(
-                    "Server returned an unexpected response. Please try again or call us at 909-443-0004.",
-                    { parseError: parseError.message, responseText: responseText }
-                );
+            } catch (e) {
+                showError("Server returned an unexpected response. Please try again.");
                 return;
             }
             
-            console.log("[SOS Form] Parsed Response:", response);
-            
-            // Проверяем статус от CRM
             if (response.status === true || response.status === "true") {
-                // ✅ УСПЕХ — лид принят CRM
-                console.log("[SOS Form] ✅ Лид успешно отправлен в CRM!");
-                
+                // ✅ Успех
+                console.log("[SOS Form] ✅ Лид принят CRM");
                 resetButton();
-                
-                // Редирект на страницу подтверждения
                 if (redirectUrl) {
                     window.location = redirectUrl;
                 } else {
-                    // Если нет redirect URL — показываем success block
                     $successBlock.show();
                     $failBlock.hide();
                     $form.hide();
                 }
-                
             } else {
-                // ❌ CRM ВЕРНУЛА ОШИБКУ
-                var crmErrorMsg = response.status_message || 
-                                  response.message || 
-                                  response.error ||
-                                  "Your request could not be processed. Please try again or call us at 909-443-0004.";
-                
-                showError(crmErrorMsg, { fullResponse: response });
+                // ❌ CRM вернула ошибку (status: false)
+                var msg = response.status_message || response.message || response.error ||
+                          "Your request could not be processed. Please try again.";
+                showError(msg);
             }
         },
         
-        // -----------------------------------------------------------------
-        // HTTP ОШИБКА (400, 500, timeout, network error)
-        // -----------------------------------------------------------------
         error: function (xhr, textStatus, errorThrown) {
-            console.error("[SOS Form] AJAX Error Details:");
-            console.error("  textStatus:", textStatus);
-            console.error("  errorThrown:", errorThrown);
-            console.error("  HTTP Status:", xhr.status);
-            console.error("  Response Text:", xhr.responseText);
+            console.error("[SOS Form] Error:", textStatus, xhr.status, xhr.responseText);
             
             var errorMessage;
             
-            // Определяем тип ошибки для пользователя
-            switch (textStatus) {
-                case "timeout":
-                    errorMessage = "The server is taking too long to respond. Please try again in a moment.";
-                    break;
-                    
-                case "abort":
-                    errorMessage = "The request was cancelled. Please try again.";
-                    break;
-                    
-                case "parsererror":
-                    errorMessage = "Server returned an unexpected response. Please try again.";
-                    break;
-                    
-                default:
-                    // Пробуем достать сообщение из тела ответа
-                    if (xhr.responseText) {
-                        try {
-                            var errorResp = JSON.parse(xhr.responseText);
-                            errorMessage = errorResp.status_message || 
-                                          errorResp.message || 
-                                          errorResp.error;
-                        } catch (e) {
-                            // Ответ не JSON
-                        }
-                    }
-                    
-                    if (!errorMessage) {
-                        if (xhr.status === 0) {
-                            errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
-                        } else if (xhr.status === 400) {
-                            errorMessage = "Invalid form data. Please check your information and try again.";
-                        } else if (xhr.status === 429) {
-                            errorMessage = "Too many requests. Please wait a moment and try again.";
-                        } else if (xhr.status >= 500) {
-                            errorMessage = "Server error. Please try again later or call us at 909-443-0004.";
-                        } else {
-                            errorMessage = "Something went wrong (Error " + xhr.status + "). Please try again or call us at 909-443-0004.";
-                        }
-                    }
+            // Пробуем достать сообщение из ответа (если CORS пропустил)
+            if (xhr.responseText) {
+                try {
+                    var errResp = JSON.parse(xhr.responseText);
+                    errorMessage = errResp.status_message || errResp.message || errResp.error;
+                } catch (e) {}
             }
             
-            showError(errorMessage, {
-                textStatus: textStatus,
-                errorThrown: errorThrown,
-                httpStatus: xhr.status
-            });
+            if (!errorMessage) {
+                if (textStatus === "timeout") {
+                    errorMessage = "The server is taking too long to respond. Please try again in a moment.";
+                } else if (xhr.status === 400) {
+                    errorMessage = "Some required information is missing or invalid. Please check your details and try again.";
+                } else if (xhr.status >= 500) {
+                    errorMessage = "Server error. Please try again later or call us at <a href='tel:+19094430004' style='color: inherit; text-decoration: underline;'>909-443-0004</a>";
+                } else {
+                    errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
+                }
+            }
+            
+            showError(errorMessage);
         }
     });
     
-    // 10. Предотвращаем стандартное поведение формы
     return false;
 });
         
