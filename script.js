@@ -562,5 +562,13 @@ function extractComponents(e) {
 }
 function formToObj(e) {
     var t = e.serializeArray(), s = {};
-    return ($.each(t, function () { s[this.name] = this.value || null; }), s);
+    $.each(t, function () {
+        // Убираем суффиксы -2, -3 и т.д. из имён полей Webflow
+        var cleanName = this.name.replace(/-\d+$/, '');
+        // Если поле с таким именем уже есть и не пустое — не перезаписываем
+        if (!s[cleanName] || !s[cleanName].length) {
+            s[cleanName] = this.value || null;
+        }
+    });
+    return s;
 }
