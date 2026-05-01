@@ -1,36 +1,57 @@
-    // --- ПРИОРИТЕТ 1: Код для Multistep Form (валидация email) ---
-        function isValidEmail(email) {
+    // --- ПРИОРИТЕТ 1: Код для Multistep Form (валидация email + phone) ---
+    function isValidEmail(email) {
         return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
     }
     
-    // 1. Находим ВСЕ формы
-    const allContactForms = document.querySelectorAll('form'); 
+    function isValidPhone(phone) {
+        // Маска ограничивает ввод до 10 цифр — требуем все 10
+        return phone.replace(/\D/g, '').length === 10;
+    }
+    
+    const allContactForms = document.querySelectorAll('form');
     
     allContactForms.forEach(form => {
-        // 2. Внутри КАЖДОЙ формы ищем ЕЕ email-поле и ЕЕ кнопку
-        const emailField = form.querySelector('.is-email');
-        
-        // 3. УБЕДИТЕСЬ, ЧТО У КНОПКИ ЕСТЬ КЛАСС "is-form-button" (НЕ ID!)
-        const nextButton = form.querySelector('.is-form-button'); // Ищем по КЛАССУ
+        const emailField  = form.querySelector('.is-email');
+        const phoneField  = form.querySelector('.is-phone');
+        const nextButton  = form.querySelector('.is-form-button');
     
-        // 4. Если мы нашли и поле, и кнопку в этой форме, вешаем логику
-        if (emailField && nextButton) {
-            
-            const toggleThisButton = () => {
+        // Если в форме нет ни одного из этих полей или нет кнопки — выходим
+        if (!nextButton) return;
+        if (!emailField && !phoneField) return;
+    
+        const toggleThisButton = () => {
+            let allValid = true;
+    
+            if (emailField) {
                 if (!isValidEmail(emailField.value)) {
-                    nextButton.style.opacity = '0.5';
-                    nextButton.style.pointerEvents = 'none';
                     emailField.classList.add('is-error');
+                    allValid = false;
                 } else {
-                    nextButton.style.opacity = '1';
-                    nextButton.style.pointerEvents = 'auto';
                     emailField.classList.remove('is-error');
                 }
-            };
+            }
     
-            toggleThisButton(); // Проверяем при загрузке
-            emailField.addEventListener('input', toggleThisButton); // и при вводе
-        }
+            if (phoneField) {
+                if (!isValidPhone(phoneField.value)) {
+                    phoneField.classList.add('is-error');
+                    allValid = false;
+                } else {
+                    phoneField.classList.remove('is-error');
+                }
+            }
+    
+            if (allValid) {
+                nextButton.style.opacity = '1';
+                nextButton.style.pointerEvents = 'auto';
+            } else {
+                nextButton.style.opacity = '0.5';
+                nextButton.style.pointerEvents = 'none';
+            }
+        };
+    
+        toggleThisButton(); // проверка при загрузке
+        if (emailField) emailField.addEventListener('input', toggleThisButton);
+        if (phoneField) phoneField.addEventListener('input', toggleThisButton);
     });
 
     // --- ПРИОРИТЕТ 2: Инициализация маски для телефонных полей ---
