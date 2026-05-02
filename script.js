@@ -147,6 +147,26 @@
         console.warn("[SOS Form] Повторная отправка заблокирована");
         return false;
     }
+        // 2.5. Проверка чекбокса согласия с политикой
+    var $policyCheckbox = $form.find('.is-policy');
+    if ($policyCheckbox.length && !$policyCheckbox.is(':checked')) {
+        var $policyWrapper = $policyCheckbox.closest('label, .w-checkbox, .checkbox-wrapper');
+        var $policyTarget = $policyWrapper.length ? $policyWrapper : $policyCheckbox;
+    
+        $policyTarget.addClass('is-error');
+    
+        // Скролл к чекбоксу
+        if ($policyTarget.offset()) {
+            $("html, body").animate({ scrollTop: $policyTarget.offset().top - 150 }, 300);
+        }
+    
+        // Снимаем подсветку при первом клике
+        $policyCheckbox.one('change', function() {
+            $policyTarget.removeClass('is-error');
+        });
+    
+        return false;
+    }
     
     // 3. Собираем данные формы
     var formData = formToObj($form);
