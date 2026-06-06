@@ -3,9 +3,11 @@
         return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
     }
     
-    function isValidPhone(phone) {
-        // Маска ограничивает ввод до 10 цифр — требуем все 10
-        return phone.replace(/\D/g, '').length === 10;
+        function isValidPhone(phone) {
+        // Маска обрезает значение до 10 цифр, но между нажатием клавиши
+        // и срабатыванием маски в поле может оказаться 11+. Берём только первые 10.
+        const digits = phone.replace(/\D/g, '').substring(0, 10);
+        return digits.length === 10;
     }
     
     const allContactForms = document.querySelectorAll('form');
